@@ -6,3 +6,4 @@ PySide2==5.15.2.1
 pyvista==0.35.2
 pyvistaqt==0.9.0
 PyYAML==6.0
+
