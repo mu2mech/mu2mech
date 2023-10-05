@@ -317,7 +317,8 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         if (variables.data['calType'] == "Cahn Hilliard 2D" or variables.data['calType'] == "Cahn Hilliard 2D alloy"):
             PostProcessing2D(self).show()
         elif(variables.data['calType'] == "Cahn Hilliard 3D alloy"):
-            PostProcessing3D(self).show()
+            self.labelStatus.setText("Not implemented yet")
+            self.labelStatus.setStyleSheet('color: black')
 
     def perform_calc(self):
 

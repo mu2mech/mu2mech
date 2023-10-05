@@ -26,8 +26,6 @@ def step1(data):
         f"OOF.ElementSelection.Select_by_Homogeneity(skeleton='{data['image_name']}:skeleton', threshold=0.9) \n" \
         f"OOF.Skeleton.Modify(skeleton='{data['image_name']}:skeleton', modifier=Refine(targets=CheckSelectedElements(),criterion=Unconditionally(),degree=Trisection(rule_set='conservative'),alpha=0.5)) \n" \
         f"OOF.ElementSelection.Select_by_Homogeneity(skeleton='{data['image_name']}:skeleton', threshold=0.9) \n" \
-        f"OOF.Skeleton.Modify(skeleton='{data['image_name']}:skeleton', modifier=Refine(targets=CheckSelectedElements(),criterion=Unconditionally(),degree=Trisection(rule_set='conservative'),alpha=0.5)) \n" \
-        f"OOF.ElementSelection.Select_by_Homogeneity(skeleton='{data['image_name']}:skeleton', threshold=0.9) \n" \
         f"OOF.Skeleton.Modify(skeleton='{data['image_name']}:skeleton', modifier=SnapNodes(targets=SnapSelected(),criterion=AverageEnergy(alpha=0.5))) \n" \
         f"OOF.ElementSelection.Select_by_Homogeneity(skeleton='{data['image_name']}:skeleton', threshold=0.9) \n" \
         f"OOF.Skeleton.Modify(skeleton='{data['image_name']}:skeleton', modifier=Anneal(targets=FiddleSelectedElements(),criterion=AverageEnergy(alpha=0.5),T=0.0,delta=1.0,iteration=FixedIteration(iterations=5))) \n" \
