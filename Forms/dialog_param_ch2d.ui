@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DialogParamCH2D</class>
+ <widget class="QDialog" name="DialogParamCH2D">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>250</width>
+    <height>433</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Edit Parameters</string>
+  </property>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>30</y>
+     <width>211</width>
+     <height>341</height>
+    </rect>
+   </property>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QLineEdit" name="lineEditFluctuation"/>
+    </item>
+    <item row="0" column="1">
+     <widget class="QLabel" name="labelFluctuation">
+      <property name="text">
+       <string>fluctuation</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLineEdit" name="lineEditCAvg"/>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLabel" name="labelCAvg">
+      <property name="text">
+       <string>Average
+Composition</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QLineEdit" name="lineEditLx"/>
+    </item>
+    <item row="2" column="1">
+     <widget class="QLabel" name="labelLx">
+      <property name="text">
+       <string>lx</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLineEdit" name="lineEditLy"/>
+    </item>
+    <item row="3" column="1">
+     <widget class="QLabel" name="labelLy">
+      <property name="text">
+       <string>ly</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QLineEdit" name="lineEditMobility"/>
+    </item>
+    <item row="4" column="1">
+     <widget class="QLabel" name="labelMobiliy">
+      <property name="text">
+       <string>Mobility</string>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="0">
+     <widget class="QLineEdit" name="lineEditDelT"/>
+    </item>
+    <item row="5" column="1">
+     <widget class="QLabel" name="labelDelT">
+      <property name="text">
+       <string>delta t</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="0">
+     <widget class="QLineEdit" name="lineEditKappa"/>
+    </item>
+    <item row="6" column="1">
+     <widget class="QLabel" name="labelKappa">
+      <property name="text">
+       <string>Kappa</string>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="0">
+     <widget class="QLineEdit" name="lineEditDelX"/>
+    </item>
+    <item row="7" column="1">
+     <widget class="QLabel" name="labelDelX">
+      <property name="text">
+       <string>delta x</string>
+      </property>
+     </widget>
+    </item>
+    <item row="8" column="0">
+     <widget class="QLineEdit" name="lineEditDelY"/>
+    </item>
+    <item row="8" column="1">
+     <widget class="QLabel" name="labelDelY">
+      <property name="text">
+       <string>delta y</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QPushButton" name="buttonBoxPramCH2D">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>390</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>OK</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

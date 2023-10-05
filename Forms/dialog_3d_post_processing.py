@@ -1,0 +1,243 @@
+# -*- coding: utf-8 -*-
+
+################################################################################
+## Form generated from reading UI file 'dialog_3d_post_processing.ui'
+##
+## Created by: Qt User Interface Compiler version 5.15.2
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
+
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
+
+
+class Ui_DialogPostProcessing3D(object):
+    def setupUi(self, DialogPostProcessing3D):
+        if not DialogPostProcessing3D.objectName():
+            DialogPostProcessing3D.setObjectName(u"DialogPostProcessing3D")
+        DialogPostProcessing3D.resize(900, 603)
+        self.groupBoxSavePlot = QGroupBox(DialogPostProcessing3D)
+        self.groupBoxSavePlot.setObjectName(u"groupBoxSavePlot")
+        self.groupBoxSavePlot.setGeometry(QRect(20, 220, 311, 101))
+        self.pushButtonBrowseSavePlot = QPushButton(self.groupBoxSavePlot)
+        self.pushButtonBrowseSavePlot.setObjectName(u"pushButtonBrowseSavePlot")
+        self.pushButtonBrowseSavePlot.setGeometry(QRect(10, 60, 31, 31))
+        self.pushButtonSavePlot = QPushButton(self.groupBoxSavePlot)
+        self.pushButtonSavePlot.setObjectName(u"pushButtonSavePlot")
+        self.pushButtonSavePlot.setGeometry(QRect(230, 60, 71, 31))
+        self.lineEditFilePathSavePlot = QLineEdit(self.groupBoxSavePlot)
+        self.lineEditFilePathSavePlot.setObjectName(u"lineEditFilePathSavePlot")
+        self.lineEditFilePathSavePlot.setGeometry(QRect(40, 60, 181, 31))
+        self.lineEditTime = QLineEdit(self.groupBoxSavePlot)
+        self.lineEditTime.setObjectName(u"lineEditTime")
+        self.lineEditTime.setGeometry(QRect(50, 30, 91, 21))
+        self.labelTimeText = QLabel(self.groupBoxSavePlot)
+        self.labelTimeText.setObjectName(u"labelTimeText")
+        self.labelTimeText.setGeometry(QRect(10, 30, 41, 16))
+        self.groupBoxExportAnimation = QGroupBox(DialogPostProcessing3D)
+        self.groupBoxExportAnimation.setObjectName(u"groupBoxExportAnimation")
+        self.groupBoxExportAnimation.setGeometry(QRect(20, 440, 311, 151))
+        self.lineEditFilePathExportAnimation = QLineEdit(self.groupBoxExportAnimation)
+        self.lineEditFilePathExportAnimation.setObjectName(u"lineEditFilePathExportAnimation")
+        self.lineEditFilePathExportAnimation.setGeometry(QRect(40, 110, 181, 31))
+        self.pushButtonBrowseExportAnimation = QPushButton(self.groupBoxExportAnimation)
+        self.pushButtonBrowseExportAnimation.setObjectName(u"pushButtonBrowseExportAnimation")
+        self.pushButtonBrowseExportAnimation.setGeometry(QRect(10, 110, 31, 31))
+        self.pushButtonExportAnimation = QPushButton(self.groupBoxExportAnimation)
+        self.pushButtonExportAnimation.setObjectName(u"pushButtonExportAnimation")
+        self.pushButtonExportAnimation.setGeometry(QRect(230, 110, 71, 31))
+        self.layoutWidget_3 = QWidget(self.groupBoxExportAnimation)
+        self.layoutWidget_3.setObjectName(u"layoutWidget_3")
+        self.layoutWidget_3.setGeometry(QRect(10, 40, 291, 58))
+        self.gridLayout = QGridLayout(self.layoutWidget_3)
+        self.gridLayout.setObjectName(u"gridLayout")
+        self.gridLayout.setContentsMargins(0, 0, 0, 0)
+        self.labelTimeIntervalText = QLabel(self.layoutWidget_3)
+        self.labelTimeIntervalText.setObjectName(u"labelTimeIntervalText")
+
+        self.gridLayout.addWidget(self.labelTimeIntervalText, 0, 0, 1, 1)
+
+        self.lineEditTimeInterval = QLineEdit(self.layoutWidget_3)
+        self.lineEditTimeInterval.setObjectName(u"lineEditTimeInterval")
+
+        self.gridLayout.addWidget(self.lineEditTimeInterval, 0, 1, 1, 1)
+
+        self.labelVideoFormatText = QLabel(self.layoutWidget_3)
+        self.labelVideoFormatText.setObjectName(u"labelVideoFormatText")
+
+        self.gridLayout.addWidget(self.labelVideoFormatText, 1, 0, 1, 1)
+
+        self.comboBoxVideoFormat = QComboBox(self.layoutWidget_3)
+        self.comboBoxVideoFormat.addItem("")
+        self.comboBoxVideoFormat.addItem("")
+        self.comboBoxVideoFormat.addItem("")
+        self.comboBoxVideoFormat.setObjectName(u"comboBoxVideoFormat")
+
+        self.gridLayout.addWidget(self.comboBoxVideoFormat, 1, 1, 1, 1)
+
+        self.labelExportAnimationStatus = QLabel(self.groupBoxExportAnimation)
+        self.labelExportAnimationStatus.setObjectName(u"labelExportAnimationStatus")
+        self.labelExportAnimationStatus.setGeometry(QRect(10, 150, 67, 17))
+        self.horizontalSliderTime = QSlider(DialogPostProcessing3D)
+        self.horizontalSliderTime.setObjectName(u"horizontalSliderTime")
+        self.horizontalSliderTime.setGeometry(QRect(350, 540, 541, 16))
+        self.horizontalSliderTime.setOrientation(Qt.Horizontal)
+        self.labelTimeText_2 = QLabel(DialogPostProcessing3D)
+        self.labelTimeText_2.setObjectName(u"labelTimeText_2")
+        self.labelTimeText_2.setGeometry(QRect(810, 560, 41, 21))
+        self.labelTimeText_2.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+        self.labelTime = QLabel(DialogPostProcessing3D)
+        self.labelTime.setObjectName(u"labelTime")
+        self.labelTime.setGeometry(QRect(850, 560, 41, 20))
+        self.labelTime.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+        self.groupBoxSaveAllPLots = QGroupBox(DialogPostProcessing3D)
+        self.groupBoxSaveAllPLots.setObjectName(u"groupBoxSaveAllPLots")
+        self.groupBoxSaveAllPLots.setGeometry(QRect(20, 330, 311, 101))
+        self.pushButtonBrowseSaveIntersection = QPushButton(self.groupBoxSaveAllPLots)
+        self.pushButtonBrowseSaveIntersection.setObjectName(u"pushButtonBrowseSaveIntersection")
+        self.pushButtonBrowseSaveIntersection.setGeometry(QRect(10, 60, 31, 31))
+        self.lineEditFilePathSaveIntersection = QLineEdit(self.groupBoxSaveAllPLots)
+        self.lineEditFilePathSaveIntersection.setObjectName(u"lineEditFilePathSaveIntersection")
+        self.lineEditFilePathSaveIntersection.setGeometry(QRect(40, 60, 181, 31))
+        self.pushButtonSaveIntersection = QPushButton(self.groupBoxSaveAllPLots)
+        self.pushButtonSaveIntersection.setObjectName(u"pushButtonSaveIntersection")
+        self.pushButtonSaveIntersection.setGeometry(QRect(230, 60, 71, 31))
+        self.comboBoxTimeIntersection = QComboBox(self.groupBoxSaveAllPLots)
+        self.comboBoxTimeIntersection.setObjectName(u"comboBoxTimeIntersection")
+        self.comboBoxTimeIntersection.setGeometry(QRect(210, 30, 91, 25))
+        self.labelTimeIntersection = QLabel(self.groupBoxSaveAllPLots)
+        self.labelTimeIntersection.setObjectName(u"labelTimeIntersection")
+        self.labelTimeIntersection.setGeometry(QRect(130, 30, 81, 21))
+        self.comboBoxAxisINtersection = QComboBox(self.groupBoxSaveAllPLots)
+        self.comboBoxAxisINtersection.addItem("")
+        self.comboBoxAxisINtersection.addItem("")
+        self.comboBoxAxisINtersection.addItem("")
+        self.comboBoxAxisINtersection.setObjectName(u"comboBoxAxisINtersection")
+        self.comboBoxAxisINtersection.setGeometry(QRect(40, 30, 61, 25))
+        self.labelAxisIntersection = QLabel(self.groupBoxSaveAllPLots)
+        self.labelAxisIntersection.setObjectName(u"labelAxisIntersection")
+        self.labelAxisIntersection.setGeometry(QRect(10, 30, 51, 21))
+        self.labelStatus = QLabel(DialogPostProcessing3D)
+        self.labelStatus.setObjectName(u"labelStatus")
+        self.labelStatus.setGeometry(QRect(350, 560, 271, 21))
+        self.framePlot = QFrame(DialogPostProcessing3D)
+        self.framePlot.setObjectName(u"framePlot")
+        self.framePlot.setGeometry(QRect(340, 10, 551, 521))
+        self.framePlot.setFrameShape(QFrame.StyledPanel)
+        self.framePlot.setFrameShadow(QFrame.Raised)
+        self.groupBox = QGroupBox(DialogPostProcessing3D)
+        self.groupBox.setObjectName(u"groupBox")
+        self.groupBox.setGeometry(QRect(20, 10, 181, 201))
+        self.checkBoxColorbar = QCheckBox(self.groupBox)
+        self.checkBoxColorbar.setObjectName(u"checkBoxColorbar")
+        self.checkBoxColorbar.setGeometry(QRect(10, 90, 121, 21))
+        self.checkBoxColorbar.setChecked(True)
+        self.checkBoxAxis = QCheckBox(self.groupBox)
+        self.checkBoxAxis.setObjectName(u"checkBoxAxis")
+        self.checkBoxAxis.setEnabled(True)
+        self.checkBoxAxis.setGeometry(QRect(10, 60, 85, 21))
+        self.checkBoxAxis.setChecked(True)
+        self.layoutWidget_1 = QWidget(self.groupBox)
+        self.layoutWidget_1.setObjectName(u"layoutWidget_1")
+        self.layoutWidget_1.setGeometry(QRect(10, 30, 161, 27))
+        self.horizontalLayout = QHBoxLayout(self.layoutWidget_1)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
+        self.comboBoxAxis = QComboBox(self.layoutWidget_1)
+        self.comboBoxAxis.addItem("")
+        self.comboBoxAxis.addItem("")
+        self.comboBoxAxis.addItem("")
+        self.comboBoxAxis.setObjectName(u"comboBoxAxis")
+
+        self.horizontalLayout.addWidget(self.comboBoxAxis)
+
+        self.labelCurrentVal = QLabel(self.layoutWidget_1)
+        self.labelCurrentVal.setObjectName(u"labelCurrentVal")
+
+        self.horizontalLayout.addWidget(self.labelCurrentVal)
+
+        self.layoutWidget_2 = QWidget(self.groupBox)
+        self.layoutWidget_2.setObjectName(u"layoutWidget_2")
+        self.layoutWidget_2.setGeometry(QRect(10, 120, 161, 21))
+        self.horizontalLayout_2 = QHBoxLayout(self.layoutWidget_2)
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.labelMinVal = QLabel(self.layoutWidget_2)
+        self.labelMinVal.setObjectName(u"labelMinVal")
+
+        self.horizontalLayout_2.addWidget(self.labelMinVal)
+
+        self.horizontalSliderAxis = QSlider(self.layoutWidget_2)
+        self.horizontalSliderAxis.setObjectName(u"horizontalSliderAxis")
+        self.horizontalSliderAxis.setOrientation(Qt.Horizontal)
+
+        self.horizontalLayout_2.addWidget(self.horizontalSliderAxis)
+
+        self.labelMaxVal = QLabel(self.layoutWidget_2)
+        self.labelMaxVal.setObjectName(u"labelMaxVal")
+
+        self.horizontalLayout_2.addWidget(self.labelMaxVal)
+
+        self.pushButtonPlot = QPushButton(self.groupBox)
+        self.pushButtonPlot.setObjectName(u"pushButtonPlot")
+        self.pushButtonPlot.setGeometry(QRect(10, 150, 161, 41))
+        self.pushButtonParticlesInfo = QPushButton(DialogPostProcessing3D)
+        self.pushButtonParticlesInfo.setObjectName(u"pushButtonParticlesInfo")
+        self.pushButtonParticlesInfo.setGeometry(QRect(210, 40, 121, 51))
+        self.pushButtonPredictProperty = QPushButton(DialogPostProcessing3D)
+        self.pushButtonPredictProperty.setObjectName(u"pushButtonPredictProperty")
+        self.pushButtonPredictProperty.setGeometry(QRect(210, 120, 121, 51))
+
+        self.retranslateUi(DialogPostProcessing3D)
+
+        QMetaObject.connectSlotsByName(DialogPostProcessing3D)
+    # setupUi
+
+    def retranslateUi(self, DialogPostProcessing3D):
+        DialogPostProcessing3D.setWindowTitle(QCoreApplication.translate("DialogPostProcessing3D", u"Post Processing", None))
+        self.groupBoxSavePlot.setTitle(QCoreApplication.translate("DialogPostProcessing3D", u"Save Plot", None))
+        self.pushButtonBrowseSavePlot.setText("")
+        self.pushButtonSavePlot.setText(QCoreApplication.translate("DialogPostProcessing3D", u"Export", None))
+        self.lineEditTime.setText(QCoreApplication.translate("DialogPostProcessing3D", u"0.0", None))
+        self.labelTimeText.setText(QCoreApplication.translate("DialogPostProcessing3D", u"Time", None))
+        self.groupBoxExportAnimation.setTitle(QCoreApplication.translate("DialogPostProcessing3D", u"Export Animation", None))
+        self.pushButtonBrowseExportAnimation.setText("")
+        self.pushButtonExportAnimation.setText(QCoreApplication.translate("DialogPostProcessing3D", u"Export", None))
+        self.labelTimeIntervalText.setText(QCoreApplication.translate("DialogPostProcessing3D", u"Time interval(ms)", None))
+        self.lineEditTimeInterval.setText(QCoreApplication.translate("DialogPostProcessing3D", u"200", None))
+        self.labelVideoFormatText.setText(QCoreApplication.translate("DialogPostProcessing3D", u"Video Format", None))
+        self.comboBoxVideoFormat.setItemText(0, QCoreApplication.translate("DialogPostProcessing3D", u"mp4", None))
+        self.comboBoxVideoFormat.setItemText(1, QCoreApplication.translate("DialogPostProcessing3D", u"mov", None))
+        self.comboBoxVideoFormat.setItemText(2, QCoreApplication.translate("DialogPostProcessing3D", u"avi", None))
+
+        self.labelExportAnimationStatus.setText("")
+        self.labelTimeText_2.setText(QCoreApplication.translate("DialogPostProcessing3D", u"time:", None))
+        self.labelTime.setText(QCoreApplication.translate("DialogPostProcessing3D", u"N/A", None))
+        self.groupBoxSaveAllPLots.setTitle(QCoreApplication.translate("DialogPostProcessing3D", u"Save all Intersections", None))
+        self.pushButtonBrowseSaveIntersection.setText("")
+        self.pushButtonSaveIntersection.setText(QCoreApplication.translate("DialogPostProcessing3D", u"Export", None))
+        self.labelTimeIntersection.setText(QCoreApplication.translate("DialogPostProcessing3D", u"Select time", None))
+        self.comboBoxAxisINtersection.setItemText(0, QCoreApplication.translate("DialogPostProcessing3D", u"x", None))
+        self.comboBoxAxisINtersection.setItemText(1, QCoreApplication.translate("DialogPostProcessing3D", u"y", None))
+        self.comboBoxAxisINtersection.setItemText(2, QCoreApplication.translate("DialogPostProcessing3D", u"z", None))
+
+        self.labelAxisIntersection.setText(QCoreApplication.translate("DialogPostProcessing3D", u"Axis", None))
+        self.labelStatus.setText("")
+        self.groupBox.setTitle(QCoreApplication.translate("DialogPostProcessing3D", u"Plot options", None))
+        self.checkBoxColorbar.setText(QCoreApplication.translate("DialogPostProcessing3D", u"Show colorbar", None))
+        self.checkBoxAxis.setText(QCoreApplication.translate("DialogPostProcessing3D", u"Show axis", None))
+        self.comboBoxAxis.setItemText(0, QCoreApplication.translate("DialogPostProcessing3D", u"x", None))
+        self.comboBoxAxis.setItemText(1, QCoreApplication.translate("DialogPostProcessing3D", u"y", None))
+        self.comboBoxAxis.setItemText(2, QCoreApplication.translate("DialogPostProcessing3D", u"z", None))
+
+        self.labelCurrentVal.setText(QCoreApplication.translate("DialogPostProcessing3D", u"0", None))
+        self.labelMinVal.setText(QCoreApplication.translate("DialogPostProcessing3D", u"0", None))
+        self.labelMaxVal.setText(QCoreApplication.translate("DialogPostProcessing3D", u"31", None))
+        self.pushButtonPlot.setText(QCoreApplication.translate("DialogPostProcessing3D", u"Generate Plot", None))
+        self.pushButtonParticlesInfo.setText(QCoreApplication.translate("DialogPostProcessing3D", u"Paricles info.", None))
+        self.pushButtonPredictProperty.setText(QCoreApplication.translate("DialogPostProcessing3D", u"Predict \n"
+"Property", None))
+    # retranslateUi
+

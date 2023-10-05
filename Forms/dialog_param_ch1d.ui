@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DialogParamCH1D</class>
+ <widget class="QDialog" name="DialogParamCH1D">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>250</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <widget class="QDialogButtonBox" name="buttonBoxPramCH1D">
+   <property name="geometry">
+    <rect>
+     <x>70</x>
+     <y>250</y>
+     <width>161</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+   <property name="standardButtons">
+    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+   </property>
+  </widget>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>30</y>
+     <width>211</width>
+     <height>211</height>
+    </rect>
+   </property>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="1">
+     <widget class="QLabel" name="labelLx">
+      <property name="text">
+       <string>length</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QLineEdit" name="lineEditKappa"/>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLineEdit" name="lineEditDelX"/>
+    </item>
+    <item row="3" column="1">
+     <widget class="QLabel" name="labelDelX">
+      <property name="text">
+       <string>delta x</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="1">
+     <widget class="QLabel" name="labelKappa">
+      <property name="text">
+       <string>Kappa</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLineEdit" name="lineEditDelT"/>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLabel" name="labelDelT">
+      <property name="text">
+       <string>delta t</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QLineEdit" name="lineEditDTilda"/>
+    </item>
+    <item row="0" column="0">
+     <widget class="QLineEdit" name="lineEditLx"/>
+    </item>
+    <item row="4" column="1">
+     <widget class="QLabel" name="labelDTilda">
+      <property name="text">
+       <string>d tilda</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

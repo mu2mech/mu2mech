@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="logo">
+    <file>Images/NSM-Logo.jpg</file>
+    <file>Images/redlogo.png</file>
+  </qresource>
+</RCC>
