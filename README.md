@@ -22,8 +22,7 @@ Follow the steps below to install and run mu2mech on your Ubuntu system:
 
 1. **Download files** 
 
-- Clone the repository using the link below 
-https://github.com/mu2mech/mu2mech
+- Download or clone the repository using the link https://github.com/mu2mech/mu2mech
 
     Navigate to link and then click Code->Download Zip
 
