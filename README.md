@@ -22,14 +22,22 @@ Follow the steps below to install and run mu2mech on your Ubuntu system:
 
 1. **Download files**
 
-2. **Create and activate a Python environment:**
+
+2. **Install python and pip package manager**
+    ```
+    sudo apt install python3
+    sudo apt install python3-pip
+    ```
+
+
+3. **Create and activate a Python environment:**
    - Open a terminal and execute the following commands:
      ```bash
      python3 -m venv mu2mech-env
      source mu2mech-env/bin/activate
      ```
 
-3. **Install packages:**
+4. **Install packages:**
    - Install Python packages:
      ```bash
      pip install -r requirements.txt
@@ -39,7 +47,7 @@ Follow the steps below to install and run mu2mech on your Ubuntu system:
      sudo apt install ffmpeg
      ```
 
-4. **Run the program:**
+5. **Run the program:**
    - Execute the following command:
      ```bash
      python3 mu2mech.py
