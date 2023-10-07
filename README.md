@@ -20,8 +20,19 @@ mu2mech is a multiscale phase field modeling software designed for Linux-based s
 
 Follow the steps below to install and run mu2mech on your Ubuntu system:
 
-1. **Download files**
+1. **Download files** 
 
+- Clone the repository using the link below 
+https://github.com/mu2mech/mu2mech
+
+    Navigate to link and then click Code->Download Zip
+
+    Or
+
+    In terminal type command 
+    ```
+    git clone https://github.com/mu2mech/mu2mech
+    ```
 
 2. **Install python and pip package manager**
     ```
