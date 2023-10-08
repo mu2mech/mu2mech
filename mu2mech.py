@@ -176,6 +176,9 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         self.labelStatus.setText("Saving project..")
         self.labelStatus.setStyleSheet('color: black')
         self.labelStatus.repaint()
+
+        variables.data['totalTime'] = int(self.lineEditTotalTime.text())
+        variables.data['timeInterval' ] = int(self.lineEditTimeInterval.text())
         load_save_project.save(file_path, variables.data)
         self.labelStatus.setText("Project saved")
         self.labelStatus.setStyleSheet('color: green')
