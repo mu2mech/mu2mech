@@ -796,8 +796,8 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
         self.labelBinodal.setObjectName("labelBinodal")
         self.labelBinodal.setText(
             f'Binodal points are {binodal_1:.2f} and {binodal_2:.2f} ')
-        self.labelInflection.setAlignment(Qt.AlignLeft)
-        self.verticalLayout.addWidget(self.labelBinodal)
+        # self.labelInflection.setAlignment(Qt.AlignLeft)
+        # self.verticalLayout.addWidget(self.labelBinodal)
 
         self.dialogGX.show()
 

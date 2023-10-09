@@ -5,8 +5,8 @@ dd -0.051
 ee 0.0006
 fluctuation 0.0001
 cAvg 0.4
-lx 400
-ly 400
+lx 256
+ly 256
 mobility 1
 delT 1
 kappa 1
