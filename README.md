@@ -43,8 +43,8 @@ Follow the steps below to install and run mu2mech on your Ubuntu system:
 3. **Create and activate a Python environment:**
    - Open a terminal and execute the following commands:
      ```bash
-     python3 -m venv mu2mech-env
-     source mu2mech-env/bin/activate
+     python3 -m venv ~/mu2mech-env
+     source ~/mu2mech-env/bin/activate
      ```
 
 4. **Install packages:**
@@ -60,7 +60,7 @@ Follow the steps below to install and run mu2mech on your Ubuntu system:
 5. **Run the program:**
    - Activate environment if not activated
       ```bash
-      source mu2mech-env/bin/activate
+      source ~/mu2mech-env/bin/activate
       ```
    - Execute the following command:
      ```bash
