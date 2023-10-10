@@ -479,7 +479,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
             self, 'Save PLot', '.png', '*.png')
         actor_mesh = None
         actor_mesh = utils.convert_save_2d_vtk(
-            variables.current_time, image_path, actor_mesh)
+            variables.current_time, image_path, actor_mesh,variables)
         self.labelStatus.setText("Plot saved")
         self.labelStatus.setStyleSheet('color: green')
 
