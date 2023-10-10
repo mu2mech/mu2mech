@@ -58,6 +58,10 @@ Follow the steps below to install and run mu2mech on your Ubuntu system:
      ```
 
 5. **Run the program:**
+   - Activate environment if not activated
+      ```bash
+      source mu2mech-env/bin/activate
+      ```
    - Execute the following command:
      ```bash
      python3 mu2mech.py
