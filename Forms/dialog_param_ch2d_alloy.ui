@@ -148,7 +148,7 @@ composition</string>
     <rect>
      <x>21</x>
      <y>20</y>
-     <width>361</width>
+     <width>368</width>
      <height>71</height>
     </rect>
    </property>
@@ -189,7 +189,7 @@ composition</string>
     <item row="1" column="2">
      <widget class="QPushButton" name="pushButtonViewGXPlot">
       <property name="text">
-       <string>View G vs X plot</string>
+       <string>View Parameters</string>
       </property>
      </widget>
     </item>

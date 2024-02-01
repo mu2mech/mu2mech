@@ -15,6 +15,7 @@ from Forms.dialog_particles import Ui_DialogParticles
 from Forms.dialog_3d_post_processing import Ui_DialogPostProcessing3D
 from Forms.dialog_oof2_calculation import Ui_DialogOOF2Calculation
 from Forms.dialog_plot_colors import Ui_DialogPlotColors
+from Forms.dialog_view_calc_param import Ui_DialogViewCalcParam
 
 from Modulus import variables
 from Modulus import load_save_project, utils, load_libs
@@ -734,73 +735,10 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
         self.dialogPhaseDiagarm.show()
 
     def view_gx_plot(self):
-        self.dialogGX = QDialog(self)
-        self.labelGX = QLabel(self.dialogGX)
-        self.dialogGX.setFixedSize(600, 650)
-        self.dialogGX.setWindowTitle(QCoreApplication.translate(
-            "DialogGX", f'{self.comboBoxAlloy.currentText()} G vs X plot at {self.comboBoxTemperature.currentText()}°C', None))
-
-        a = float(self.coff_data[self.comboBoxTemperature.currentText()]['aa'])
-        b = float(self.coff_data[self.comboBoxTemperature.currentText()]['bb'])
-        c = float(self.coff_data[self.comboBoxTemperature.currentText()]['cc'])
-        d = float(self.coff_data[self.comboBoxTemperature.currentText()]['dd'])
-        e = float(self.coff_data[self.comboBoxTemperature.currentText()]['ee'])
-
-        x_arr = np.arange(0, 1, 0.01)
-
-        # Equation for G vs X plot
-        def fun(x):
-            return a*x**4+b*x**3+c*x**2+d*x+e
-
-        vfunc = np.vectorize(fun)
-        y_arr = vfunc(x_arr)
-
-        self.layoutWidget = QWidget(self.dialogGX)
-        self.verticalLayout = QVBoxLayout(self.layoutWidget)
-
-        # PLot G vs X
-        fig = plt.figure(figsize=(5, 5), dpi=300)
-        ax = fig.add_subplot()
-        plt.plot(x_arr, y_arr)
-        img = f'Images/gx.png'
-        plt.xlim([0, 1])
-        plt.ylim([-0.01, 0.08])
-        plt.xlabel("Composition", fontsize=12)
-        plt.ylabel("Gibbs energy", fontsize=12)
-        plt.savefig(img, bbox_inches="tight", dpi=300)
-        plt.close()
-        pixmap = QPixmap(img)
-        width = 600
-        height = 600
-        self.labelGXPLot = QLabel(self.layoutWidget)
-        self.labelGXPLot.setPixmap(pixmap.scaled(
-            width, height, Qt.KeepAspectRatio))
-        self.verticalLayout.addWidget(self.labelGXPLot)
-
-        # Inflection points
-        point_1 = (-6 * b + math.sqrt(36 * b * b - 96 * a * c)) / (24 * a)
-        point_2 = (-6 * b - math.sqrt(36 * b * b - 96 * a * c)) / (24 * a)
-        self.labelInflection = QLabel(self.layoutWidget)
-        self.labelInflection.setObjectName("labelInflection")
-        self.labelInflection.setText(
-            f'Inflection points are {point_1:.2f} and {point_2:.2f} ')
-        self.labelInflection.setAlignment(Qt.AlignLeft)
-        self.verticalLayout.addWidget(self.labelInflection)
-
-        # binodal points
-        binodal_1 = float(
-            self.coff_data[self.comboBoxTemperature.currentText()]['binodal_1'])
-        binodal_2 = float(
-            self.coff_data[self.comboBoxTemperature.currentText()]['binodal_2'])
-        self.labelBinodal = QLabel(self.layoutWidget)
-        self.labelBinodal.setObjectName("labelBinodal")
-        self.labelBinodal.setText(
-            f'Binodal points are {binodal_1:.2f} and {binodal_2:.2f} ')
-        # self.labelInflection.setAlignment(Qt.AlignLeft)
-        # self.verticalLayout.addWidget(self.labelBinodal)
-
-        self.dialogGX.show()
-
+        temperature = self.comboBoxTemperature.currentText()
+        variables.temp_selected_coff = self.coff_data[temperature]
+        ViewCalcParam(self).show()
+        
     def load_temperature_data(self):
         try:
             file_path = f'TC_Data/Coff/{self.comboBoxAlloy.currentText()}.csv'
@@ -840,6 +778,56 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
         )]['ee'])
         self.close()
 
+
+class ViewCalcParam(Ui_DialogViewCalcParam, QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+        self.setFixedSize(670, 450)
+        a = variables.temp_selected_coff['aa']
+        b = variables.temp_selected_coff['bb']
+        c = variables.temp_selected_coff['cc']
+        d = variables.temp_selected_coff['dd']
+        e = variables.temp_selected_coff['ee']
+        
+        x_arr = np.arange(0, 1, 0.01)
+
+        # Equation for G vs X plot
+        def fun(x):
+            return a*x**4+b*x**3+c*x**2+d*x+e
+
+        vfunc = np.vectorize(fun)
+        y_arr = vfunc(x_arr)
+
+        # PLot G vs X
+        fig = plt.figure(figsize=(4, 5), dpi=300)
+        ax = fig.add_subplot()
+        plt.plot(x_arr, y_arr)
+        img = f'Images/gx.png'
+        plt.xlim([0, 1])
+        plt.ylim([-0.01, 0.08])
+        plt.xlabel("Composition", fontsize=12)
+        plt.ylabel("Gibbs energy", fontsize=12)
+        plt.savefig(img, bbox_inches="tight", dpi=300)
+        plt.close()
+        pixmap = QPixmap(img)
+        width = 400
+        height = 400
+        self.labelGXPlot.setPixmap(pixmap)
+        self.labelGXPlot.setScaledContents(True)
+        self.resize(pixmap.width(), pixmap.height())
+
+        # Inflection points
+        point_1 = (-6 * b + math.sqrt(36 * b * b - 96 * a * c)) / (24 * a)
+        point_2 = (-6 * b - math.sqrt(36 * b * b - 96 * a * c)) / (24 * a)
+        self.labelInflextionPointValue.setText(f'{point_1:.2f}, {point_2:.2f}')
+
+        # binodal points
+        binodal_1 = float(variables.temp_selected_coff['binodal_1'])
+        binodal_2 = float(variables.temp_selected_coff['binodal_2'])
+        self.labelBinodalPointValue.setText(f'{binodal_1:.2f}, {binodal_2:.2f}')
+        
+        
 
 class ParamCH3DAlloy(Ui_DialogParamCH3DAlloy, QDialog):
     def __init__(self, parent=None):

@@ -18,6 +18,7 @@ data = {
 alloys = None
 selected_temperature = None
 selected_alloy = None
+temp_selected_coff = None
 
 # Position of mouse in the mesh
 mouse_position = {

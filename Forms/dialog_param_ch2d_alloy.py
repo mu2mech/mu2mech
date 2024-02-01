@@ -125,7 +125,7 @@ class Ui_DialogParamCH2DAlloy(object):
 
         self.layoutWidget = QWidget(DialogParamCH2DAlloy)
         self.layoutWidget.setObjectName(u"layoutWidget")
-        self.layoutWidget.setGeometry(QRect(21, 20, 361, 71))
+        self.layoutWidget.setGeometry(QRect(21, 20, 368, 71))
         self.gridLayout_2 = QGridLayout(self.layoutWidget)
         self.gridLayout_2.setObjectName(u"gridLayout_2")
         self.gridLayout_2.setContentsMargins(0, 0, 0, 0)
@@ -185,7 +185,7 @@ class Ui_DialogParamCH2DAlloy(object):
         self.labelAlloy.setText(QCoreApplication.translate("DialogParamCH2DAlloy", u"Alloy", None))
         self.pushButtonViewPhaseDiagram.setText(QCoreApplication.translate("DialogParamCH2DAlloy", u"View Phase Diagram", None))
         self.labelTemperature.setText(QCoreApplication.translate("DialogParamCH2DAlloy", u"Temperature(\u00b0C)", None))
-        self.pushButtonViewGXPlot.setText(QCoreApplication.translate("DialogParamCH2DAlloy", u"View G vs X plot", None))
+        self.pushButtonViewGXPlot.setText(QCoreApplication.translate("DialogParamCH2DAlloy", u"View Parameters", None))
         self.buttonBoxPramCH2DAlloy.setText(QCoreApplication.translate("DialogParamCH2DAlloy", u"Ok", None))
     # retranslateUi
 
