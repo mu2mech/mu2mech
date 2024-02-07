@@ -12,7 +12,6 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
-from Modulus import logo
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -59,10 +58,10 @@ class Ui_MainWindow(object):
         self.timeLabel.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
         self.pushButtonEdit = QPushButton(self.centralwidget)
         self.pushButtonEdit.setObjectName(u"pushButtonEdit")
-        self.pushButtonEdit.setGeometry(QRect(640, 180, 201, 41))
+        self.pushButtonEdit.setGeometry(QRect(640, 80, 201, 41))
         self.layoutWidget_1 = QWidget(self.centralwidget)
         self.layoutWidget_1.setObjectName(u"layoutWidget_1")
-        self.layoutWidget_1.setGeometry(QRect(640, 110, 201, 58))
+        self.layoutWidget_1.setGeometry(QRect(640, 10, 201, 58))
         self.verticalLayout_2 = QVBoxLayout(self.layoutWidget_1)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
@@ -78,7 +77,7 @@ class Ui_MainWindow(object):
 
         self.layoutWidget_3 = QWidget(self.centralwidget)
         self.layoutWidget_3.setObjectName(u"layoutWidget_3")
-        self.layoutWidget_3.setGeometry(QRect(640, 240, 201, 58))
+        self.layoutWidget_3.setGeometry(QRect(640, 140, 201, 58))
         self.gridLayout = QGridLayout(self.layoutWidget_3)
         self.gridLayout.setObjectName(u"gridLayout")
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
@@ -104,7 +103,7 @@ class Ui_MainWindow(object):
 
         self.layoutWidget = QWidget(self.centralwidget)
         self.layoutWidget.setObjectName(u"layoutWidget")
-        self.layoutWidget.setGeometry(QRect(640, 380, 201, 61))
+        self.layoutWidget.setGeometry(QRect(640, 260, 201, 61))
         self.verticalLayout = QVBoxLayout(self.layoutWidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -140,7 +139,7 @@ class Ui_MainWindow(object):
 
         self.pushButtonPostProcessing = QPushButton(self.centralwidget)
         self.pushButtonPostProcessing.setObjectName(u"pushButtonPostProcessing")
-        self.pushButtonPostProcessing.setGeometry(QRect(640, 570, 201, 51))
+        self.pushButtonPostProcessing.setGeometry(QRect(640, 580, 201, 51))
         self.framePlot = QFrame(self.centralwidget)
         self.framePlot.setObjectName(u"framePlot")
         self.framePlot.setGeometry(QRect(20, -40, 600, 600))
@@ -148,7 +147,7 @@ class Ui_MainWindow(object):
         self.framePlot.setFrameShadow(QFrame.Raised)
         self.groupBox = QGroupBox(self.centralwidget)
         self.groupBox.setObjectName(u"groupBox")
-        self.groupBox.setGeometry(QRect(640, 460, 201, 101))
+        self.groupBox.setGeometry(QRect(640, 340, 201, 91))
         self.checkBoxColorbar = QCheckBox(self.groupBox)
         self.checkBoxColorbar.setObjectName(u"checkBoxColorbar")
         self.checkBoxColorbar.setGeometry(QRect(10, 60, 85, 21))
@@ -179,15 +178,46 @@ class Ui_MainWindow(object):
         self.labelMousePosition.setGeometry(QRect(200, 600, 141, 17))
         self.pushButtonStartStopResume = QPushButton(self.centralwidget)
         self.pushButtonStartStopResume.setObjectName(u"pushButtonStartStopResume")
-        self.pushButtonStartStopResume.setGeometry(QRect(640, 320, 201, 41))
-        self.labelLogo_1 = QLabel(self.centralwidget)
-        self.labelLogo_1.setObjectName(u"labelLogo_1")
-        self.labelLogo_1.setGeometry(QRect(640, 10, 95, 90))
-        self.labelLogo_1.setPixmap(QPixmap(u":/logo/Images/redlogo.png"))
-        self.labelLogo_1.setScaledContents(True)
-        self.labelLogo_2 = QLabel(self.centralwidget)
-        self.labelLogo_2.setObjectName(u"labelLogo_2")
-        self.labelLogo_2.setGeometry(QRect(750, 10, 91, 91))
+        self.pushButtonStartStopResume.setGeometry(QRect(640, 210, 201, 41))
+        self.groupBox_2 = QGroupBox(self.centralwidget)
+        self.groupBox_2.setObjectName(u"groupBox_2")
+        self.groupBox_2.setGeometry(QRect(640, 450, 201, 111))
+        self.layoutWidget1 = QWidget(self.groupBox_2)
+        self.layoutWidget1.setObjectName(u"layoutWidget1")
+        self.layoutWidget1.setGeometry(QRect(10, 30, 181, 71))
+        self.gridLayout_2 = QGridLayout(self.layoutWidget1)
+        self.gridLayout_2.setObjectName(u"gridLayout_2")
+        self.gridLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.labelLength = QLabel(self.layoutWidget1)
+        self.labelLength.setObjectName(u"labelLength")
+
+        self.gridLayout_2.addWidget(self.labelLength, 0, 0, 1, 1)
+
+        self.labelLengthValue = QLabel(self.layoutWidget1)
+        self.labelLengthValue.setObjectName(u"labelLengthValue")
+
+        self.gridLayout_2.addWidget(self.labelLengthValue, 0, 1, 1, 1)
+
+        self.labelTime = QLabel(self.layoutWidget1)
+        self.labelTime.setObjectName(u"labelTime")
+
+        self.gridLayout_2.addWidget(self.labelTime, 1, 0, 1, 1)
+
+        self.labelTimeValue = QLabel(self.layoutWidget1)
+        self.labelTimeValue.setObjectName(u"labelTimeValue")
+
+        self.gridLayout_2.addWidget(self.labelTimeValue, 1, 1, 1, 1)
+
+        self.labelEnergy = QLabel(self.layoutWidget1)
+        self.labelEnergy.setObjectName(u"labelEnergy")
+
+        self.gridLayout_2.addWidget(self.labelEnergy, 2, 0, 1, 1)
+
+        self.labelEnergyValue = QLabel(self.layoutWidget1)
+        self.labelEnergyValue.setObjectName(u"labelEnergyValue")
+
+        self.gridLayout_2.addWidget(self.labelEnergyValue, 2, 1, 1, 1)
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
@@ -249,8 +279,13 @@ class Ui_MainWindow(object):
         self.labelStatus.setText(QCoreApplication.translate("MainWindow", u"<html><head/><body><p><br/></p></body></html>", None))
         self.labelMousePosition.setText("")
         self.pushButtonStartStopResume.setText(QCoreApplication.translate("MainWindow", u"Start", None))
-        self.labelLogo_1.setText("")
-        self.labelLogo_2.setText(QCoreApplication.translate("MainWindow", u"<html><head/><body><p><img src=\":/logo/Images/NSM-Logo.jpg\"/></p></body></html>", None))
+        self.groupBox_2.setTitle(QCoreApplication.translate("MainWindow", u"Characteristics values", None))
+        self.labelLength.setText(QCoreApplication.translate("MainWindow", u"<html><head/><body><p align=\"right\">Length (nm):</p></body></html>", None))
+        self.labelLengthValue.setText("")
+        self.labelTime.setText(QCoreApplication.translate("MainWindow", u"<html><head/><body><p align=\"right\">Time (sec.):</p></body></html>", None))
+        self.labelTimeValue.setText("")
+        self.labelEnergy.setText(QCoreApplication.translate("MainWindow", u"<html><head/><body><p align=\"right\">Energy (KJ/mole):</p></body></html>", None))
+        self.labelEnergyValue.setText("")
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
         self.menuOptions.setTitle(QCoreApplication.translate("MainWindow", u"Options", None))
     # retranslateUi

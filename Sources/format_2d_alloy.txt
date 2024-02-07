@@ -1,0 +1,16 @@
+aa 1.0
+bb -2.046
+cc 1.0964
+dd -0.051
+ee 0.0006
+fluctuation 0.0001
+cAvg 0.3
+lx 512
+ly 512
+delT 1
+delX 0.4
+delY 0.4
+timeInterval 100.0
+totalTime 1000.0
+resume 0
+resumeFrom 0.00

@@ -110,6 +110,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
 
     def start_calc(self):
         print("starting calculation")
+        self.display_char_values()
         # For running jobs in normal servers
         if(self.calc_process == None):
             self.calc_thread_status = True
@@ -119,6 +120,16 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
             self.set_progress_status()
             self.calc_process.finished.connect(self.calc_completed)
         self.calc_running()
+
+
+    def display_char_values(self):
+        energy = variables.temp_selected_coff["barrier_height"]
+        length = math.sqrt(variables.temp_selected_coff["kappa"]/variables.temp_selected_coff["barrier_height"])
+        time  =  variables.temp_selected_coff["diffusivity"] / length**2
+
+        self.labelEnergyValue.setText(f"{energy:.2E}")
+        self.labelLengthValue.setText(f"{length:.2E}")
+        self.labelTimeValue.setText(f"{time:.2E}")
 
     def get_job_submitted_info(self, dl):
         self.job_id = dl.job_id
@@ -248,9 +259,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'cAvg': 0.4,
                 'lx': 256,
                 'ly': 256,
-                'mobility': 1,
                 'delT': 1,
-                'kappa': 1,
                 'delX': 0.4,
                 'delY': 0.4
             }
@@ -262,9 +271,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'cAvg': 0.4,
                 'lx': 256,
                 'ly': 256,
-                'mobility': 1,
                 'delT': 1,
-                'kappa': 1,
                 'delX': 0.4,
                 'delY': 0.4
             }
@@ -284,9 +291,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'lx': 32,
                 'ly': 32,
                 'lz': 32,
-                'mobility': 1,
                 'delT': 1,
-                'kappa': 1,
                 'delX': 0.4,
                 'delY': 0.4,
                 'delZ': 0.4
@@ -688,7 +693,7 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
         self.buttonBoxPramCH2DAlloy.clicked.connect(self.save_pram_ch2d)
         self.pushButtonViewPhaseDiagram.clicked.connect(
             self.view_phase_diagram)
-        self.pushButtonViewGXPlot.clicked.connect(self.view_gx_plot)
+        self.pushButtonViewParameters.clicked.connect(self.view_gibbs_param)
         self.comboBoxAlloy.currentTextChanged.connect(
             self.load_temperature_data)
         # hides close button
@@ -718,6 +723,9 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
         if(variables.selected_temperature):
             self.comboBoxTemperature.setCurrentText(variables.selected_temperature)
 
+        temperature = self.comboBoxTemperature.currentText()
+        variables.temp_selected_coff = self.coff_data[temperature]
+
 
     def view_phase_diagram(self):
         self.dialogPhaseDiagarm = QDialog(self)
@@ -734,7 +742,7 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
 
         self.dialogPhaseDiagarm.show()
 
-    def view_gx_plot(self):
+    def view_gibbs_param(self):
         temperature = self.comboBoxTemperature.currentText()
         variables.temp_selected_coff = self.coff_data[temperature]
         ViewCalcParam(self).show()
@@ -756,8 +764,10 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
                 self.coff_data[str(d[0])]['cc'] = d[3]
                 self.coff_data[str(d[0])]['dd'] = d[4]
                 self.coff_data[str(d[0])]['ee'] = d[5]
-                self.coff_data[str(d[0])]['binodal_1'] = d[6]
-                self.coff_data[str(d[0])]['binodal_2'] = d[7]
+                self.coff_data[str(d[0])]['diffusivity'] = d[6]
+                self.coff_data[str(d[0])]['barrier_height'] = d[7]
+                self.coff_data[str(d[0])]['kappa'] = d[8]
+                self.coff_data[str(d[0])]['elem'] = self.comboBoxAlloy.currentText()
                 self.comboBoxTemperature.addItem(str(d[0]))
         except:
             print(f"Data not in correct format for {self.comboBoxAlloy.currentText()}")
@@ -783,21 +793,42 @@ class ViewCalcParam(Ui_DialogViewCalcParam, QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
-        self.setFixedSize(670, 450)
-        a = variables.temp_selected_coff['aa']
-        b = variables.temp_selected_coff['bb']
-        c = variables.temp_selected_coff['cc']
-        d = variables.temp_selected_coff['dd']
-        e = variables.temp_selected_coff['ee']
+        self.setFixedSize(700, 440)
+        self.coff = {}
+        self.coff['a'] = variables.temp_selected_coff['aa']
+        self.coff['b'] = variables.temp_selected_coff['bb']
+        self.coff['c'] = variables.temp_selected_coff['cc']
+        self.coff['d'] = variables.temp_selected_coff['dd']
+        self.coff['e'] = variables.temp_selected_coff['ee']
+        self.coff['diffusivity'] = variables.temp_selected_coff['diffusivity']
+        self.coff['barrier_height'] = variables.temp_selected_coff['barrier_height']
+        self.coff['kappa'] = variables.temp_selected_coff['kappa']
         
         x_arr = np.arange(0, 1, 0.01)
 
-        # Equation for G vs X plot
-        def fun(x):
-            return a*x**4+b*x**3+c*x**2+d*x+e
+        self.binodal_points = self.obtain_binodal_points()                                                                                                                              
 
-        vfunc = np.vectorize(fun)
-        y_arr = vfunc(x_arr)
+        # Inflection points
+        point_1 = (-6 * self.coff['b'] + math.sqrt(36 * self.coff['b'] * self.coff['b'] - 96 * self.coff['a'] * self.coff['c'])) / (24 * self.coff['a'])
+        point_2 = (-6 * self.coff['b'] - math.sqrt(36 * self.coff['b'] * self.coff['b'] - 96 * self.coff['a'] * self.coff['c'])) / (24 * self.coff['a'])
+        # Check and swap if necessary
+        if point_1 > point_2:
+            point_1, point_2 = point_2, point_1
+        self.labelInflextionPointValue.setText(f'{point_1:.2f}, {point_2:.2f}')
+
+        # binodal points
+        self.labelBinodalPointValue.setText(f'{self.binodal_points[0]:.2f}, {self.binodal_points[1]:.2f}')
+
+        # Barrier height
+        self.labelBarrierHeightValue.setText(f'{self.coff["barrier_height"]:.2f}')
+
+        # Diffusivity
+        self.labelDiffusivityValue.setText(f'{self.coff["diffusivity"]:.2E}')
+
+
+        vfunc = np.vectorize(self.fun) 
+        y_arr = vfunc(x_arr) * self.coff["barrier_height"]
+        elem = variables.temp_selected_coff["elem"].split('-')[-1]
 
         # PLot G vs X
         fig = plt.figure(figsize=(4, 5), dpi=300)
@@ -805,29 +836,39 @@ class ViewCalcParam(Ui_DialogViewCalcParam, QDialog):
         plt.plot(x_arr, y_arr)
         img = f'Images/gx.png'
         plt.xlim([0, 1])
-        plt.ylim([-0.01, 0.08])
-        plt.xlabel("Composition", fontsize=12)
-        plt.ylabel("Gibbs energy", fontsize=12)
+        plt.xlabel(f"Mole fraction of {elem}", fontsize=12)
+        plt.ylabel("Gibbs energy (KJ/mole)", fontsize=12)
         plt.savefig(img, bbox_inches="tight", dpi=300)
         plt.close()
         pixmap = QPixmap(img)
-        width = 400
-        height = 400
         self.labelGXPlot.setPixmap(pixmap)
         self.labelGXPlot.setScaledContents(True)
         self.resize(pixmap.width(), pixmap.height())
+    
 
-        # Inflection points
-        point_1 = (-6 * b + math.sqrt(36 * b * b - 96 * a * c)) / (24 * a)
-        point_2 = (-6 * b - math.sqrt(36 * b * b - 96 * a * c)) / (24 * a)
-        self.labelInflextionPointValue.setText(f'{point_1:.2f}, {point_2:.2f}')
+    # Equation for G vs X plot
+    def fun(self,x):
+        return self.coff['a']*x**4+self.coff['b']*x**3+self.coff['c']*x**2+self.coff['d']*x+self.coff['e']
+        
+    def obtain_binodal_points(self):
+        # Specify the range [0, 1] and step size
+        start = 0
+        end = 1
+        step_size = 0.001
 
-        # binodal points
-        binodal_1 = float(variables.temp_selected_coff['binodal_1'])
-        binodal_2 = float(variables.temp_selected_coff['binodal_2'])
-        self.labelBinodalPointValue.setText(f'{binodal_1:.2f}, {binodal_2:.2f}')
-        
-        
+        binodal_x_values = []
+
+        # Iterate over the range and identify local minima
+        for x in np.arange(start, end, step_size):
+            # Check if x is not at the boundary
+            if start < x < end:
+                # Check if the derivative changes sign around x
+                if self.fun(x - step_size) > self.fun(x) < self.fun(x + step_size):
+                    binodal_x_values.append(x)
+
+        return sorted(binodal_x_values)
+
+    
 
 class ParamCH3DAlloy(Ui_DialogParamCH3DAlloy, QDialog):
     def __init__(self, parent=None):
@@ -842,7 +883,7 @@ class ParamCH3DAlloy(Ui_DialogParamCH3DAlloy, QDialog):
         self.buttonBoxPramCH3DAlloy.clicked.connect(self.save_pram_ch3d)
         self.pushButtonViewPhaseDiagram.clicked.connect(
             self.view_phase_diagram)
-        self.pushButtonViewGXPlot.clicked.connect(self.view_gx_plot)
+        self.pushButtonViewParameters.clicked.connect(self.view_gibbs_param)
         self.comboBoxAlloy.currentTextChanged.connect(
             self.load_temperature_data)
         # hides close button
@@ -859,75 +900,15 @@ class ParamCH3DAlloy(Ui_DialogParamCH3DAlloy, QDialog):
         
         for alloy in variables.alloys:
             self.comboBoxAlloy.addItem(alloy)
+
+        temperature = self.comboBoxTemperature.currentText()
+        variables.temp_selected_coff = self.coff_data[temperature]
             
             
-    def view_gx_plot(self):
-        self.dialogGX = QDialog(self)
-        self.labelGX = QLabel(self.dialogGX)
-        self.dialogGX.setFixedSize(600, 650)
-        self.dialogGX.setWindowTitle(QCoreApplication.translate(
-            "DialogGX", f'{self.comboBoxAlloy.currentText()} G vs X plot at {self.comboBoxTemperature.currentText()}°C', None))
-
-        a = float(self.coff_data[self.comboBoxTemperature.currentText()]['aa'])
-        b = float(self.coff_data[self.comboBoxTemperature.currentText()]['bb'])
-        c = float(self.coff_data[self.comboBoxTemperature.currentText()]['cc'])
-        d = float(self.coff_data[self.comboBoxTemperature.currentText()]['dd'])
-        e = float(self.coff_data[self.comboBoxTemperature.currentText()]['ee'])
-
-        x_arr = np.arange(0, 1, 0.01)
-
-        # Equation for G vs X plot
-        def fun(x):
-            return a*x**4+b*x**3+c*x**2+d*x+e
-
-        vfunc = np.vectorize(fun)
-        y_arr = vfunc(x_arr)
-
-        self.layoutWidget = QWidget(self.dialogGX)
-        self.verticalLayout = QVBoxLayout(self.layoutWidget)
-
-        # PLot G vs X
-        fig = plt.figure(figsize=(5, 5), dpi=300)
-        ax = fig.add_subplot()
-        plt.plot(x_arr, y_arr)
-        img = f'Images/gx.png'
-        plt.xlim([0, 1])
-        plt.ylim([-0.01, 0.08])
-        plt.xlabel("Composition", fontsize=12)
-        plt.ylabel("Gibbs energy", fontsize=12)
-        plt.savefig(img, bbox_inches="tight", dpi=300)
-        plt.close()
-        pixmap = QPixmap(img)
-        width = 600
-        height = 600
-        self.labelGXPLot = QLabel(self.layoutWidget)
-        self.labelGXPLot.setPixmap(pixmap.scaled(
-            width, height, Qt.KeepAspectRatio))
-        self.verticalLayout.addWidget(self.labelGXPLot)
-
-        # Inflection points
-        point_1 = (-6 * b + math.sqrt(36 * b * b - 96 * a * c)) / (24 * a)
-        point_2 = (-6 * b - math.sqrt(36 * b * b - 96 * a * c)) / (24 * a)
-        self.labelInflection = QLabel(self.layoutWidget)
-        self.labelInflection.setObjectName("labelInflection")
-        self.labelInflection.setText(
-            f'Inflection points are {point_1:.2f} and {point_2:.2f} ')
-        self.labelInflection.setAlignment(Qt.AlignLeft)
-        self.verticalLayout.addWidget(self.labelInflection)
-
-        # binodal points
-        binodal_1 = float(
-            self.coff_data[self.comboBoxTemperature.currentText()]['binodal_1'])
-        binodal_2 = float(
-            self.coff_data[self.comboBoxTemperature.currentText()]['binodal_2'])
-        self.labelBinodal = QLabel(self.layoutWidget)
-        self.labelBinodal.setObjectName("labelBinodal")
-        self.labelBinodal.setText(
-            f'Binodal points are {binodal_1:.2f} and {binodal_2:.2f} ')
-        self.labelInflection.setAlignment(Qt.AlignLeft)
-        self.verticalLayout.addWidget(self.labelBinodal)
-
-        self.dialogGX.show()
+    def view_gibbs_param(self):
+        temperature = self.comboBoxTemperature.currentText()
+        variables.temp_selected_coff = self.coff_data[temperature]
+        ViewCalcParam(self).show()
 
 
     def view_phase_diagram(self):
@@ -962,8 +943,10 @@ class ParamCH3DAlloy(Ui_DialogParamCH3DAlloy, QDialog):
                 self.coff_data[str(d[0])]['cc'] = d[3]
                 self.coff_data[str(d[0])]['dd'] = d[4]
                 self.coff_data[str(d[0])]['ee'] = d[5]
-                self.coff_data[str(d[0])]['binodal_1'] = d[6]
-                self.coff_data[str(d[0])]['binodal_2'] = d[7]
+                self.coff_data[str(d[0])]['diffusivity'] = d[6]
+                self.coff_data[str(d[0])]['barrier_height'] = d[7]
+                self.coff_data[str(d[0])]['kappa'] = d[8]
+                self.coff_data[str(d[0])]['elem'] = self.comboBoxAlloy.currentText()
                 self.comboBoxTemperature.addItem(str(d[0]))
         except:
             print(f"Data not in correct format for {self.comboBoxAlloy.currentText()}")

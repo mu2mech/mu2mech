@@ -14,7 +14,7 @@
 int main()
 {
    /* Data initialization */
-   int lx, ly, lz, M, k, x, y, z, n, N, i, j, kk, ij, m, resume, total_time_steps;
+   int lx, ly, lz, x, y, z, n, N, i, j, kk, ij, m, resume, total_time_steps;
    double delt, flag_time, delkx, delky, delkz, halflx, halfly, halflz, kfx, kfy, kfz, kfx2, kfy2, kfz2, k2, k4, delx, dely, delz, c_avg, fluctuation;
    char junk[100];
    char resume_from_str[10];
@@ -30,6 +30,7 @@ int main()
    {
       printf("Cannot open file");
    }
+   
    fscanf(fp, "\
    %s%lf\
    %s%lf\
@@ -41,9 +42,7 @@ int main()
    %s%d\
    %s%d\
    %s%d\
-   %s%d\
    %s%lf\
-   %s%d\
    %s%lf\
    %s%lf\
    %s%lf\
@@ -61,9 +60,7 @@ int main()
           junk, &lx,
           junk, &ly,
           junk, &lz,
-          junk, &M,
           junk, &delt,
-          junk, &k,
           junk, &delx,
           junk, &dely,
           junk, &delz,
@@ -71,18 +68,19 @@ int main()
           junk, &total_time,
           junk, &resume,
           junk, &resume_from_str);
-
+          
    fclose(fp);
    sscanf(resume_from_str, "%lf", &resume_from);
 
    /* Defining variables in fourier space */
 
-   fftw_complex *c, *ctilda, *g, *gtilda;
+   fftw_complex *c, *ctilda, *g, *gtilda, *mobility;
 
-   c      = fftw_malloc(sizeof(fftw_complex) * lx * ly * lz);
+   c = fftw_malloc(sizeof(fftw_complex) * lx * ly * lz);
    ctilda = fftw_malloc(sizeof(fftw_complex) * lx * ly * lz);
-   g      = fftw_malloc(sizeof(fftw_complex) * lx * ly * lz);
+   g = fftw_malloc(sizeof(fftw_complex) * lx * ly * lz);
    gtilda = fftw_malloc(sizeof(fftw_complex) * lx * ly * lz);
+   mobility = fftw_malloc(sizeof(fftw_complex) * lx * ly * lz);
 
    /* Defining FFT Plans */
 
@@ -115,11 +113,10 @@ int main()
       // Loading initial composition
    }
 
-
    /* Defining initial composition */
 
    double **random_numA, **random_numB, **random_numC, **random_numD;
-   float  gasdev(long *idum);
+   float gasdev(long *idum);
    double rsum1, rmean1, rsum2, rmean2, rsum3, rmean3, rsum4, rmean4;
 
    /* Calculating spinodal points */
@@ -135,7 +132,7 @@ int main()
 
    {
 
-      long int SEED  = rand();
+      long int SEED = rand();
       long int SEED2 = rand();
       long int SEED3 = rand();
       long int SEED4 = rand();
@@ -234,7 +231,7 @@ int main()
       for (n = 1; n <= total_time_steps; ++n)
       {
 
-      /* Saving data to files */
+         /* Saving data to files */
 
          time = n * delt;
          if (fmod(time, time_interval) == 0)
@@ -290,7 +287,9 @@ int main()
 
                   ij = x * ly * lz + y * lz + z;
 
-                  g[ij] = -(4 * aa * (c[ij]) * (c[ij]) * (c[ij]) + 3 * bb * (c[ij]) * (c[ij]) + 2 * cc * (c[ij]) + dd); // Derivative of  free energy 
+                  g[ij] = -(4 * aa * (c[ij]) * (c[ij]) * (c[ij]) + 3 * bb * (c[ij]) * (c[ij]) + 2 * cc * (c[ij]) + dd); // Derivative of  free energy
+                                                                                                                        // mobility[y+ly*x] = fabs(1/(12*aa*(c[y+ly*x])*(c[y+ly*x]) + 6*bb*(c[y+ly*x])+ 2*cc));
+                  mobility[ij] = (c[ij]) * (1 - c[ij]);
                }
             }
          }
@@ -342,7 +341,8 @@ int main()
                   k2 = kfx2 + kfy2 + kfz2;
                   k4 = k2 * k2;
 
-                  ctilda[kk * ly * lx + j * lx + i] = 1. * (ctilda[kk * ly * lx + j * lx + i] + delt * k2 * gtilda[kk * ly * lx + j * lx + i]) / (1.0 + delt * k4);
+                  ctilda[kk * ly * lx + j * lx + i] = 1. * (ctilda[kk * ly * lx + j * lx + i] + delt * mobility[kk * ly * lx + j * lx + i] * k2 * gtilda[kk * ly * lx + j * lx + i]) / (1.0 + delt * mobility[kk * ly * lx + j * lx + i] * k4);
+                  ctilda[j + ly * i] = 1. * (ctilda[j + ly * i] + 2 * delt * mobility[j + ly * i] * k2 * gtilda[j + ly * i]) / (1.0 + 2 * delt * mobility[j + ly * i] * k4); /* no need need to define new variable and replace ctilda values */
                }
             }
          }
@@ -362,11 +362,10 @@ int main()
 
                   ij = x * ly * lz + y * lz + z;
 
-                  c[ij] = 1. * c[ij] / (lx * ly * lz); 
+                  c[ij] = 1. * c[ij] / (lx * ly * lz);
                }
             }
          }
-
 
          /* Noise generation upto 1000 time steps */
 
@@ -461,7 +460,6 @@ int main()
       }
    }
 
-
    /* For region outside spinodal */
 
    if ((c_avg <= pp1) && (c_avg >= pp2))
@@ -478,7 +476,7 @@ int main()
                ij = x * ly * lz + y * lz + z;
 
                {
-                  c[ij] = c_avg + (-1 + 2 * ((double)rand() / (double)RAND_MAX)) / 200; 
+                  c[ij] = c_avg + (-1 + 2 * ((double)rand() / (double)RAND_MAX)) / 200;
                }
             }
          }
@@ -499,7 +497,7 @@ int main()
       for (n = 1; n <= total_time_steps; ++n)
       {
 
-      /* Saving data to files */ 
+         /* Saving data to files */
 
          time = n * delt;
          if (fmod(time, time_interval) == 0)
@@ -541,7 +539,7 @@ int main()
                   }
                }
             }
-             fclose(fptr);
+            fclose(fptr);
          }
 
          /* Defining free energy */
@@ -555,7 +553,7 @@ int main()
 
                   ij = x * ly * lz + y * lz + z;
 
-                  g[ij] = -(4 * aa * (c[ij]) * (c[ij]) * (c[ij]) + 3 * bb * (c[ij]) * (c[ij]) + 2 * cc * (c[ij]) + dd); // Derivative of  free energy 
+                  g[ij] = -(4 * aa * (c[ij]) * (c[ij]) * (c[ij]) + 3 * bb * (c[ij]) * (c[ij]) + 2 * cc * (c[ij]) + dd); // Derivative of  free energy
                }
             }
          }
@@ -607,7 +605,7 @@ int main()
                   k2 = kfx2 + kfy2 + kfz2;
                   k4 = k2 * k2;
 
-                  ctilda[kk * ly * lx + j * lx + i] = 1. * (ctilda[kk * ly * lx + j * lx + i] + delt * k2 * gtilda[kk * ly * lx + j * lx + i]) / (1.0 + delt * k4); 
+                  ctilda[kk * ly * lx + j * lx + i] = 1. * (ctilda[kk * ly * lx + j * lx + i] + delt * k2 * gtilda[kk * ly * lx + j * lx + i]) / (1.0 + delt * k4);
                }
             }
          }
@@ -627,7 +625,7 @@ int main()
 
                   ij = x * ly * lz + y * lz + z;
 
-                  c[ij] = 1. * c[ij] / (lx * ly * lz); 
+                  c[ij] = 1. * c[ij] / (lx * ly * lz);
                }
             }
          }

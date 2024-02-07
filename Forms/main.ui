@@ -87,7 +87,7 @@
     <property name="geometry">
      <rect>
       <x>640</x>
-      <y>180</y>
+      <y>80</y>
       <width>201</width>
       <height>41</height>
      </rect>
@@ -100,7 +100,7 @@
     <property name="geometry">
      <rect>
       <x>640</x>
-      <y>110</y>
+      <y>10</y>
       <width>201</width>
       <height>58</height>
      </rect>
@@ -126,7 +126,7 @@
     <property name="geometry">
      <rect>
       <x>640</x>
-      <y>240</y>
+      <y>140</y>
       <width>201</width>
       <height>58</height>
      </rect>
@@ -158,7 +158,7 @@
     <property name="geometry">
      <rect>
       <x>640</x>
-      <y>380</y>
+      <y>260</y>
       <width>201</width>
       <height>61</height>
      </rect>
@@ -206,7 +206,7 @@
     <property name="geometry">
      <rect>
       <x>640</x>
-      <y>570</y>
+      <y>580</y>
       <width>201</width>
       <height>51</height>
      </rect>
@@ -235,9 +235,9 @@
     <property name="geometry">
      <rect>
       <x>640</x>
-      <y>460</y>
+      <y>340</y>
       <width>201</width>
-      <height>101</height>
+      <height>91</height>
      </rect>
     </property>
     <property name="title">
@@ -356,7 +356,7 @@
     <property name="geometry">
      <rect>
       <x>640</x>
-      <y>320</y>
+      <y>210</y>
       <width>201</width>
       <height>41</height>
      </rect>
@@ -365,37 +365,72 @@
      <string>Start</string>
     </property>
    </widget>
-   <widget class="QLabel" name="labelLogo_1">
+   <widget class="QGroupBox" name="groupBox_2">
     <property name="geometry">
      <rect>
       <x>640</x>
-      <y>10</y>
-      <width>95</width>
-      <height>90</height>
+      <y>450</y>
+      <width>201</width>
+      <height>111</height>
      </rect>
     </property>
-    <property name="text">
-     <string/>
+    <property name="title">
+     <string>Characteristics values</string>
     </property>
-    <property name="pixmap">
-     <pixmap resource="../logo.qrc">:/logo/Images/redlogo.png</pixmap>
-    </property>
-    <property name="scaledContents">
-     <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QLabel" name="labelLogo_2">
-    <property name="geometry">
-     <rect>
-      <x>750</x>
-      <y>10</y>
-      <width>91</width>
-      <height>91</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;img src=&quot;:/logo/Images/NSM-Logo.jpg&quot;/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-    </property>
+    <widget class="QWidget" name="layoutWidget1">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>30</y>
+       <width>181</width>
+       <height>71</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelLength">
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;Length (nm):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="labelLengthValue">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelTime">
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;Time (sec.):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="labelTimeValue">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelEnergy">
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;Energy (KJ/mole):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="labelEnergyValue">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

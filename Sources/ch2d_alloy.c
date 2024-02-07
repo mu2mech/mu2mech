@@ -17,10 +17,10 @@ int main()
 
    /* Data initialization */
 
-   int    lx, ly, M, k, x, y, n, N, i, j, ij, resume, total_time_steps;
+   int lx, ly, k, x, y, n, N, i, j, ij, resume, total_time_steps;
    double delt, delkx, delky, halflx, halfly, kfx, kfy, kfx2, kfy2, k2, k4, delx, dely, c_avg;
-   char   junk[100];
-   char   resume_from_str[10];
+   char junk[100];
+   char resume_from_str[10];
    double resume_from;
    double time, time_interval, total_time;
    double fluctuation;
@@ -44,9 +44,7 @@ int main()
    %s%lf\
    %s%d\
    %s%d\
-   %s%d\
    %s%lf\
-   %s%d\
    %s%lf\
    %s%lf\
    %s%lf\
@@ -62,9 +60,7 @@ int main()
           junk, &c_avg,
           junk, &lx,
           junk, &ly,
-          junk, &M,
           junk, &delt,
-          junk, &k,
           junk, &delx,
           junk, &dely,
           junk, &time_interval,
@@ -78,12 +74,13 @@ int main()
 
    /* Defining variables in fourier space */
 
-   fftw_complex *c, *ctilda, *g, *gtilda;
-   
-   c      = fftw_malloc(sizeof(fftw_complex) * lx * ly);
+   fftw_complex *c, *ctilda, *g, *gtilda, *mobility;
+
+   c = fftw_malloc(sizeof(fftw_complex) * lx * ly);
    ctilda = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   g      = fftw_malloc(sizeof(fftw_complex) * lx * ly);
+   g = fftw_malloc(sizeof(fftw_complex) * lx * ly);
    gtilda = fftw_malloc(sizeof(fftw_complex) * lx * ly);
+   mobility = fftw_malloc(sizeof(fftw_complex) * lx * ly);
 
    /* Defining FFT Plans */
 
@@ -112,7 +109,7 @@ int main()
    else
    {
 
-      /* Loading initial composition */ 
+      /* Loading initial composition */
 
       FILE *fp;
       char fName[30] = "";
@@ -139,14 +136,13 @@ int main()
    /* Defining initial composition */
 
    double **random_numA, **random_numB, **random_numC, **random_numD;
-   float  gasdev(long *idum);
+   float gasdev(long *idum);
    double rsum1, rmean1, rsum2, rmean2, rsum3, rmean3, rsum4, rmean4;
 
    pp1 = (-6 * bb + sqrt(36 * bb * bb - 96 * aa * cc)) / (24 * aa);
    pp2 = (-6 * bb - sqrt(36 * bb * bb - 96 * aa * cc)) / (24 * aa);
 
    if ((c_avg >= pp1) || (c_avg <= pp2))
-
    {
 
       long int SEED = -94929;
@@ -243,7 +239,7 @@ int main()
 
       {
 
-      /* Saving data to files */ 
+         /* Saving data to files */
 
          time = n * delt;
          if (fmod(time, time_interval) == 0)
@@ -273,7 +269,9 @@ int main()
             for (y = 0; y < ly; ++y)
             {
 
-               g[y + ly * x] = -(4 * aa * (c[y + ly * x]) * (c[y + ly * x]) * (c[y + ly * x]) + 3 * bb * (c[y + ly * x]) * (c[y + ly * x]) + 2 * cc * (c[y + ly * x]) + dd);
+               g[y + ly * x] = -(4 * aa * (c[y + ly * x]) * (c[y + ly * x]) * (c[y + ly * x]) + 3 * bb * (c[y + ly * x]) * (c[y + ly * x]) + 2 * cc * (c[y + ly * x]) + dd); /* Derivative of  free energy */
+                                                                                                                                                                             // mobility[y+ly*x] = fabs(1/(12*aa*(c[y+ly*x])*(c[y+ly*x]) + 6*bb*(c[y+ly*x])+ 2*cc));
+               mobility[y + ly * x] = (c[y + ly * x]) * (1 - c[y + ly * x]);
             }
          }
 
@@ -311,7 +309,7 @@ int main()
                k2 = kfx2 + kfy2;
                k4 = k2 * k2;
 
-               ctilda[j + ly * i] = 1. * (ctilda[j + ly * i] + delt * k2 * gtilda[j + ly * i]) / (1.0 + delt * k4); 
+               ctilda[j + ly * i] = 1. * (ctilda[j + ly * i] + 2 * delt * mobility[j + ly * i] * k2 * gtilda[j + ly * i]) / (1.0 + 2 * delt * mobility[j + ly * i] * k4); /* no need need to define new variable and replace ctilda values */
             }
          }
 
@@ -326,20 +324,18 @@ int main()
             for (y = 0; y < ly; ++y)
 
             {
-               c[y + ly * x] = 1. * c[y + ly * x] / (lx * ly); 
+               c[y + ly * x] = 1. * c[y + ly * x] / (lx * ly);
             }
          }
 
          /* Noise generation upto 1000 time steps */
 
          if (n <= 1000)
-
          {
-
-            long int SEED = -94929;
-            long int SEED2 = -81659;
-            long int SEED3 = -15816;
-            long int SEED4 = -49369;
+            long int SEED = -949;
+            long int SEED2 = -819;
+            long int SEED3 = -16;
+            long int SEED4 = -49;
 
             random_numA = dmatrix(0, lx, 0, ly);
             random_numB = dmatrix(0, lx, 0, ly);
@@ -420,7 +416,6 @@ int main()
    }
 
    if ((c_avg <= pp1) && (c_avg >= pp2))
-
    {
 
       for (x = 0; x < lx; ++x)
@@ -447,7 +442,7 @@ int main()
       for (n = 1; n <= total_time_steps; ++n)
       {
 
-      /* Saving data to files */ 
+         /* Saving data to files */
 
          time = n * delt;
 
@@ -466,9 +461,9 @@ int main()
                {
                   fprintf(fptr, "%f ", creal(c[y + ly * x]));
                }
-                  fprintf(fptr, "%f\n", creal(c[y + ly * x]));
+               fprintf(fptr, "%f\n", creal(c[y + ly * x]));
             }
-                  fclose(fptr);
+            fclose(fptr);
          }
 
          /* Defining free energy */
@@ -478,7 +473,9 @@ int main()
             for (y = 0; y < ly; ++y)
             {
 
-               g[y + ly * x] = -(4 * aa * (c[y + ly * x]) * (c[y + ly * x]) * (c[y + ly * x]) + 3 * bb * (c[y + ly * x]) * (c[y + ly * x]) + 2 * cc * (c[y + ly * x]) + dd);
+               g[y + ly * x] = -(4 * aa * (c[y + ly * x]) * (c[y + ly * x]) * (c[y + ly * x]) + 3 * bb * (c[y + ly * x]) * (c[y + ly * x]) + 2 * cc * (c[y + ly * x]) + dd); /* Derivative of  free energy */
+                                                                                                                                                                             // mobility[y+ly*x] = fabs(1/(12*aa*(c[y+ly*x])*(c[y+ly*x]) + 6*bb*(c[y+ly*x])+ 2*cc));
+               mobility[y + ly * x] = (c[y + ly * x]) * (1 - c[y + ly * x]);
             }
          }
 
@@ -516,13 +513,13 @@ int main()
                k2 = kfx2 + kfy2;
                k4 = k2 * k2;
 
-               ctilda[j + ly * i] = 1. * (ctilda[j + ly * i] + delt * k2 * gtilda[j + ly * i]) / (1.0 + delt * k4); 
+               ctilda[j + ly * i] = 1. * (ctilda[j + ly * i] + 2 * delt * mobility[j + ly * i] * k2 * gtilda[j + ly * i]) / (1.0 + 2 * delt * mobility[j + ly * i] * k4); /* no need need to define new variable and replace ctilda values */
             }
          }
 
          /* IFFT of final composition */
 
-           fftw_execute(s);
+         fftw_execute(s);
 
          /* Normalization of composition */
 
@@ -531,7 +528,7 @@ int main()
             for (y = 0; y < ly; ++y)
 
             {
-               c[y + ly * x] = 1. * c[y + ly * x] / (lx * ly); 
+               c[y + ly * x] = 1. * c[y + ly * x] / (lx * ly);
             }
          }
       }
@@ -539,14 +536,13 @@ int main()
 
    fftw_free(c);
    fftw_free(g);
+   fftw_free(mobility);
 
    fftw_destroy_plan(p);
    fftw_destroy_plan(q);
    fftw_destroy_plan(s);
 
    fftw_cleanup();
-
-   fclose(fp);
 
    return 0;
 }
