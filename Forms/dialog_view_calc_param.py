@@ -28,7 +28,7 @@ class Ui_DialogViewCalcParam(object):
         self.labelGXPlot.setGeometry(QRect(10, 10, 400, 400))
         self.widget = QWidget(DialogViewCalcParam)
         self.widget.setObjectName(u"widget")
-        self.widget.setGeometry(QRect(440, 10, 251, 121))
+        self.widget.setGeometry(QRect(440, 11, 241, 161))
         self.gridLayout = QGridLayout(self.widget)
         self.gridLayout.setObjectName(u"gridLayout")
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
@@ -72,6 +72,16 @@ class Ui_DialogViewCalcParam(object):
 
         self.gridLayout.addWidget(self.labelDiffusivityValue, 3, 1, 1, 1)
 
+        self.labelGBEnergy = QLabel(self.widget)
+        self.labelGBEnergy.setObjectName(u"labelGBEnergy")
+
+        self.gridLayout.addWidget(self.labelGBEnergy, 4, 0, 1, 1)
+
+        self.labelGBEnergyValue = QLabel(self.widget)
+        self.labelGBEnergyValue.setObjectName(u"labelGBEnergyValue")
+
+        self.gridLayout.addWidget(self.labelGBEnergyValue, 4, 1, 1, 1)
+
 
         self.retranslateUi(DialogViewCalcParam)
 
@@ -89,5 +99,7 @@ class Ui_DialogViewCalcParam(object):
         self.labelBarrierHeightValue.setText("")
         self.labelDiffusivity.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">Diffusivity (m<span style=\" vertical-align:super;\">2</span>/sec):</p></body></html>", None))
         self.labelDiffusivityValue.setText("")
+        self.labelGBEnergy.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">GB energy (J/m<span style=\" vertical-align:super;\">2</span>):</p></body></html>", None))
+        self.labelGBEnergyValue.setText("")
     # retranslateUi
 
