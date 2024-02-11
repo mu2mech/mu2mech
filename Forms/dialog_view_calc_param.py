@@ -26,58 +26,58 @@ class Ui_DialogViewCalcParam(object):
         self.labelGXPlot = QLabel(self.frame)
         self.labelGXPlot.setObjectName(u"labelGXPlot")
         self.labelGXPlot.setGeometry(QRect(10, 10, 400, 400))
-        self.widget = QWidget(DialogViewCalcParam)
-        self.widget.setObjectName(u"widget")
-        self.widget.setGeometry(QRect(440, 11, 241, 161))
-        self.gridLayout = QGridLayout(self.widget)
+        self.layoutWidget = QWidget(DialogViewCalcParam)
+        self.layoutWidget.setObjectName(u"layoutWidget")
+        self.layoutWidget.setGeometry(QRect(440, 11, 241, 161))
+        self.gridLayout = QGridLayout(self.layoutWidget)
         self.gridLayout.setObjectName(u"gridLayout")
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
-        self.labelInflextionPoint = QLabel(self.widget)
+        self.labelInflextionPoint = QLabel(self.layoutWidget)
         self.labelInflextionPoint.setObjectName(u"labelInflextionPoint")
 
         self.gridLayout.addWidget(self.labelInflextionPoint, 0, 0, 1, 1)
 
-        self.labelInflextionPointValue = QLabel(self.widget)
+        self.labelInflextionPointValue = QLabel(self.layoutWidget)
         self.labelInflextionPointValue.setObjectName(u"labelInflextionPointValue")
 
         self.gridLayout.addWidget(self.labelInflextionPointValue, 0, 1, 1, 1)
 
-        self.labelBinodalPoint = QLabel(self.widget)
+        self.labelBinodalPoint = QLabel(self.layoutWidget)
         self.labelBinodalPoint.setObjectName(u"labelBinodalPoint")
 
         self.gridLayout.addWidget(self.labelBinodalPoint, 1, 0, 1, 1)
 
-        self.labelBinodalPointValue = QLabel(self.widget)
+        self.labelBinodalPointValue = QLabel(self.layoutWidget)
         self.labelBinodalPointValue.setObjectName(u"labelBinodalPointValue")
 
         self.gridLayout.addWidget(self.labelBinodalPointValue, 1, 1, 1, 1)
 
-        self.labelBarrierHeight = QLabel(self.widget)
+        self.labelBarrierHeight = QLabel(self.layoutWidget)
         self.labelBarrierHeight.setObjectName(u"labelBarrierHeight")
 
         self.gridLayout.addWidget(self.labelBarrierHeight, 2, 0, 1, 1)
 
-        self.labelBarrierHeightValue = QLabel(self.widget)
+        self.labelBarrierHeightValue = QLabel(self.layoutWidget)
         self.labelBarrierHeightValue.setObjectName(u"labelBarrierHeightValue")
 
         self.gridLayout.addWidget(self.labelBarrierHeightValue, 2, 1, 1, 1)
 
-        self.labelDiffusivity = QLabel(self.widget)
+        self.labelDiffusivity = QLabel(self.layoutWidget)
         self.labelDiffusivity.setObjectName(u"labelDiffusivity")
 
         self.gridLayout.addWidget(self.labelDiffusivity, 3, 0, 1, 1)
 
-        self.labelDiffusivityValue = QLabel(self.widget)
+        self.labelDiffusivityValue = QLabel(self.layoutWidget)
         self.labelDiffusivityValue.setObjectName(u"labelDiffusivityValue")
 
         self.gridLayout.addWidget(self.labelDiffusivityValue, 3, 1, 1, 1)
 
-        self.labelGBEnergy = QLabel(self.widget)
+        self.labelGBEnergy = QLabel(self.layoutWidget)
         self.labelGBEnergy.setObjectName(u"labelGBEnergy")
 
         self.gridLayout.addWidget(self.labelGBEnergy, 4, 0, 1, 1)
 
-        self.labelGBEnergyValue = QLabel(self.widget)
+        self.labelGBEnergyValue = QLabel(self.layoutWidget)
         self.labelGBEnergyValue.setObjectName(u"labelGBEnergyValue")
 
         self.gridLayout.addWidget(self.labelGBEnergyValue, 4, 1, 1, 1)
@@ -95,11 +95,11 @@ class Ui_DialogViewCalcParam(object):
         self.labelInflextionPointValue.setText("")
         self.labelBinodalPoint.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">Binodal points:</p></body></html>", None))
         self.labelBinodalPointValue.setText("")
-        self.labelBarrierHeight.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">Barrier Height (KJ/mole):</p></body></html>", None))
+        self.labelBarrierHeight.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">H (KJ/mole):</p></body></html>", None))
         self.labelBarrierHeightValue.setText("")
-        self.labelDiffusivity.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">Diffusivity (m<span style=\" vertical-align:super;\">2</span>/sec):</p></body></html>", None))
+        self.labelDiffusivity.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">D (m<span style=\" vertical-align:super;\">2</span>/sec):</p></body></html>", None))
         self.labelDiffusivityValue.setText("")
-        self.labelGBEnergy.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">GB energy (J/m<span style=\" vertical-align:super;\">2</span>):</p></body></html>", None))
+        self.labelGBEnergy.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\"><span style=\" font-family:'Google Sans,arial,sans-serif'; color:#202124; background-color:#ffffff;\">\u03c3 </span>(J/m<span style=\" vertical-align:super;\">2</span>):</p></body></html>", None))
         self.labelGBEnergyValue.setText("")
     # retranslateUi
 
