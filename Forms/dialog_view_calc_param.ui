@@ -111,7 +111,7 @@
     <item row="4" column="0">
      <widget class="QLabel" name="labelGBEnergy">
       <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;&lt;span style=&quot; font-family:'Google Sans,arial,sans-serif'; color:#202124; background-color:#ffffff;&quot;&gt;σ &lt;/span&gt;(J/m&lt;span style=&quot; vertical-align:super;&quot;&gt;2&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;σ (J/m2):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
     </item>

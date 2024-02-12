@@ -99,7 +99,7 @@ class Ui_DialogViewCalcParam(object):
         self.labelBarrierHeightValue.setText("")
         self.labelDiffusivity.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">D (m<span style=\" vertical-align:super;\">2</span>/sec):</p></body></html>", None))
         self.labelDiffusivityValue.setText("")
-        self.labelGBEnergy.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\"><span style=\" font-family:'Google Sans,arial,sans-serif'; color:#202124; background-color:#ffffff;\">\u03c3 </span>(J/m<span style=\" vertical-align:super;\">2</span>):</p></body></html>", None))
+        self.labelGBEnergy.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">\u03c3 (J/m2):</p></body></html>", None))
         self.labelGBEnergyValue.setText("")
     # retranslateUi
 
