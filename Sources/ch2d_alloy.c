@@ -4,6 +4,7 @@
 #include <fftw3.h>
 #include <time.h>
 #include <math.h>
+#include <stdlib.h>
 #include "nrutil.c"
 #include "gasdev.c"
 #define pi 3.14159265
@@ -16,18 +17,22 @@ int main()
 {
 
    /* Data initialization */
-
-   int lx, ly, k, x, y, n, N, i, j, ij, resume, total_time_steps;
-   double delt, delkx, delky, halflx, halfly, kfx, kfy, kfx2, kfy2, k2, k4, delx, dely, c_avg;
+   int lx, ly, M, k, x, y, n, N, i, j, ij, m, total_time_steps;
+   double delt, total_time, delkx, delky, halflx, halfly, kfx, kfy, kfx2, kfy2, k2, k4, delx, dely, c_avg, fluctuation;
    char junk[100];
+
+   char NAME[50];
+   int steps = 100; // steps after which composition need to be printed//
+
+   int resume;
    char resume_from_str[10];
    double resume_from;
-   double time, time_interval, total_time;
-   double fluctuation;
-   double aa, bb, cc, dd, ee, pp1, pp2;
+
+   double aa, bb, cc, dd, ee, pp1, pp2, Ag, Hg; /* G = a*C^4 + b*C^3 + c*C^2 + d*C + e ,p1 and p2 are spinodal points*/
 
    /* Creating a file and Getting data from input file */
-
+   FILE *fptr;
+   FILE *fptr8;
    FILE *fp;
    fp = fopen("Sources/input.dat", "r");
    if (fp == NULL)
@@ -47,7 +52,7 @@ int main()
    %s%lf\
    %s%lf\
    %s%lf\
-   %s%lf\
+   %s%d\
    %s%lf\
    %s%d\
    %s%s",
@@ -63,46 +68,59 @@ int main()
           junk, &delt,
           junk, &delx,
           junk, &dely,
-          junk, &time_interval,
+          junk, &steps,
           junk, &total_time,
           junk, &resume,
           junk, &resume_from_str);
+          
+   printf("%d\n", steps);       
+   printf("%lf\n", total_time);
+   printf("%d\n", resume);
+   printf("%s\n", resume_from_str);
 
-   fclose(fp);
-
-   sscanf(resume_from_str, "%lf", &resume_from);
-
-   /* Defining variables in fourier space */
-
-   fftw_complex *c, *ctilda, *g, *gtilda, *mobility;
+   fftw_complex *c, *ctilda, *g, *gtilda, *M1, *f1x, *f1y, *f1tildax, *f1tilday, *f2x, *f2y, *f2tildax, *f2tilday;
+   fftw_plan p, q, q1x, q2x, q1y, q2y, s;
 
    c = fftw_malloc(sizeof(fftw_complex) * lx * ly);
    ctilda = fftw_malloc(sizeof(fftw_complex) * lx * ly);
    g = fftw_malloc(sizeof(fftw_complex) * lx * ly);
    gtilda = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   mobility = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-
-   /* Defining FFT Plans */
-
-   fftw_plan p, q, s;
+   M1 = fftw_malloc(sizeof(fftw_complex) * lx * ly);
+   f1x = fftw_malloc(sizeof(fftw_complex) * lx * ly);
+   f1tildax = fftw_malloc(sizeof(fftw_complex) * lx * ly);
+   f2x = fftw_malloc(sizeof(fftw_complex) * lx * ly);
+   f2tildax = fftw_malloc(sizeof(fftw_complex) * lx * ly);
+   f1y = fftw_malloc(sizeof(fftw_complex) * lx * ly);
+   f1tilday = fftw_malloc(sizeof(fftw_complex) * lx * ly);
+   f2y = fftw_malloc(sizeof(fftw_complex) * lx * ly);
+   f2tilday = fftw_malloc(sizeof(fftw_complex) * lx * ly);
 
    p = fftw_plan_dft_2d(lx, ly, c, ctilda, FFTW_FORWARD, FFTW_ESTIMATE);
    q = fftw_plan_dft_2d(lx, ly, g, gtilda, FFTW_FORWARD, FFTW_ESTIMATE);
    s = fftw_plan_dft_2d(lx, ly, ctilda, c, FFTW_BACKWARD, FFTW_ESTIMATE);
+   q1x = fftw_plan_dft_2d(lx, ly, f2x, f2tildax, FFTW_FORWARD, FFTW_ESTIMATE);
+   q2x = fftw_plan_dft_2d(lx, ly, f1tildax, f1x, FFTW_BACKWARD, FFTW_ESTIMATE);
+   q1y = fftw_plan_dft_2d(lx, ly, f2y, f2tilday, FFTW_FORWARD, FFTW_ESTIMATE);
+   q2y = fftw_plan_dft_2d(lx, ly, f1tilday, f1y, FFTW_BACKWARD, FFTW_ESTIMATE);
 
-   // resume = 0 - Start calculation from the beginning
-   // resume = 1 - Resume calculation
+   /* Defining initial composition */
+
+   double **random_numA, **random_numB, **random_numC, **random_numD;
+   float gasdev(long *idum);
+   double rsum1, rmean1, rsum2, rmean2, rsum3, rmean3, rsum4, rmean4;
 
    if (resume == 0)
    {
       /* Defining initial composition */
       /* Providing noise from -0.001 to +0.001*/
 
-      for (x = 0; x < lx; ++x)
+      for (i = 0; i < lx; ++i)
       {
-         for (y = 0; y < ly; ++y)
+         for (j = 0; j < ly; ++j)
          {
-            c[y + ly * x] = c_avg + (-1 + 2 * ((double)rand() / (double)RAND_MAX)) * (fluctuation * 10);
+            ij = i * ly + j;
+
+            c[ij] = c_avg;
          }
       }
    }
@@ -133,22 +151,71 @@ int main()
       }
    }
 
-   /* Defining initial composition */
+   /* Saving initial profile*/
 
-   double **random_numA, **random_numB, **random_numC, **random_numD;
-   float gasdev(long *idum);
-   double rsum1, rmean1, rsum2, rmean2, rsum3, rmean3, rsum4, rmean4;
+   // sprintf(NAME, "output/comp0.txt");
+   // fptr = fopen(NAME, "w");
+
+   // for (i = 0; i < lx; i++)
+   // {
+   //    for (j = 0; j < ly; j++)
+   //    {
+   //       ij = ly * i + j;
+   //       fprintf(fptr, "%lf ", creal(c[ij]));
+   //    }
+   //    fprintf(fptr, "\n");
+   // }
+   // fclose(fptr);
+
+   /* for fe-Cr at 400 C */
+
+   /*
+   aa=1;
+   bb=-2.041;
+   cc=1.2214;
+   dd=-0.1837;
+   ee=0.0081;
+   */
+
+   /* for fe-Cr at 500 C */
+
+   aa = 1;
+   bb = -2.0920;
+   cc = 1.4299;
+   dd = -0.3513;
+   ee = 0.0282;
+   Ag = 35.00;
+   Hg = 0.93;
+
+   /* for fe-Cu at 1300 C
+
+   aa=1;
+   bb=-1.76;
+   cc= 0.9504;
+   dd=-0.1458;
+   ee=0.0077;
+   */
 
    pp1 = (-6 * bb + sqrt(36 * bb * bb - 96 * aa * cc)) / (24 * aa);
    pp2 = (-6 * bb - sqrt(36 * bb * bb - 96 * aa * cc)) / (24 * aa);
 
+   printf("\n pp1=%lf pp2= %lf", pp1, pp2);
+
+   int rand1, rand2, rand3, rand4;
+
+   rand1 = rand();
+   rand2 = rand();
+   rand3 = rand();
+   rand4 = rand();
+
    if ((c_avg >= pp1) || (c_avg <= pp2))
+
    {
 
-      long int SEED = -94929;
-      long int SEED2 = -81659;
-      long int SEED3 = -15816;
-      long int SEED4 = -49369;
+      long int SEED = -949;
+      long int SEED2 = -819;
+      long int SEED3 = -16;
+      long int SEED4 = -49;
 
       random_numA = dmatrix(0, lx, 0, ly);
       random_numB = dmatrix(0, lx, 0, ly);
@@ -161,7 +228,7 @@ int main()
          {
             ij = i * ly + j;
 
-            random_numA[i][j] = 0.0;
+            random_numA[i][j] = 0.00;
             random_numB[i][j] = 0.0;
             random_numC[i][j] = 0.0;
             random_numD[i][j] = 0.0;
@@ -225,6 +292,17 @@ int main()
       free_dmatrix(random_numC, 0, lx, 0, ly);
       free_dmatrix(random_numD, 0, lx, 0, ly);
 
+      for (x = 0; x < lx; ++x)
+      {
+         for (y = 0; y < ly; ++y)
+         {
+
+            {
+               c[y + ly * x] = c[y + ly * x] + (-1 + 2 * ((double)rand() / (double)RAND_MAX)) / 10; /* ((double)rand()/(double)RAND_MAX) generates the random no. between 0 and 1*/
+            }
+         }
+      }
+
       delkx = 2.0 * pi / (lx * delx);
       delky = 2.0 * pi / (ly * dely);
 
@@ -233,34 +311,14 @@ int main()
 
       /* Running the code for given time */
 
+      printf("\nenter the total time\n");
+      // scanf("%lf", &total_time);
+      printf("%lf", total_time);
+
       total_time_steps = ((total_time) / delt);
 
       for (n = 1; n <= total_time_steps; ++n)
-
       {
-
-         /* Saving data to files */
-
-         time = n * delt;
-         if (fmod(time, time_interval) == 0)
-         {
-            char file_name[25];
-
-            sprintf(file_name, "Output/Data/output_%.2f.dat", time);
-
-            FILE *fptr;
-            fptr = fopen(file_name, "w");
-
-            for (x = 0; x < lx; ++x)
-            {
-               for (y = 0; y < ly; ++y)
-               {
-                  fprintf(fptr, "%f ", creal(c[y + ly * x]));
-               }
-               fprintf(fptr, "%f\n", creal(c[y + ly * x]));
-            }
-            fclose(fptr);
-         }
 
          /* Defining free energy */
 
@@ -269,16 +327,80 @@ int main()
             for (y = 0; y < ly; ++y)
             {
 
-               g[y + ly * x] = -(4 * aa * (c[y + ly * x]) * (c[y + ly * x]) * (c[y + ly * x]) + 3 * bb * (c[y + ly * x]) * (c[y + ly * x]) + 2 * cc * (c[y + ly * x]) + dd); /* Derivative of  free energy */
-                                                                                                                                                                             // mobility[y+ly*x] = fabs(1/(12*aa*(c[y+ly*x])*(c[y+ly*x]) + 6*bb*(c[y+ly*x])+ 2*cc));
-               mobility[y + ly * x] = (c[y + ly * x]) * (1 - c[y + ly * x]);
+               g[y + ly * x] = -(Ag / Hg) * (4 * aa * (c[y + ly * x]) * (c[y + ly * x]) * (c[y + ly * x]) + 3 * bb * (c[y + ly * x]) * (c[y + ly * x]) + 2 * cc * (c[y + ly * x]) + dd); /* Derivative of  free energy */
+                                                                                                                                                                                         // M1[y+ly*x] = fabs(1/(12*aa*(c[y+ly*x])*(c[y+ly*x]) + 6*bb*(c[y+ly*x])+ 2*cc));
+               M1[y + ly * x] = (c[y + ly * x]) * (1 - c[y + ly * x]);
             }
          }
+
+         printf("time is = %lf\n", n * delt);
 
          /* FFT of composition and  free energy */
 
          fftw_execute(q);
          fftw_execute(p);
+
+         for (x = 0; x < lx; ++x)
+         {
+            if (x < halflx)
+            {
+               kfx = x * delkx;
+            }
+
+            else
+            {
+               kfx = (x - lx) * delkx;
+            }
+            kfx2 = kfx * kfx;
+
+            for (y = 0; y < ly; ++y)
+            {
+               if (y < halfly)
+               {
+                  kfy = y * delky;
+               }
+
+               else
+               {
+                  kfy = (y - ly) * delky;
+               }
+
+               kfy2 = kfy * kfy;
+               k2 = kfx2 + kfy2;
+               k4 = k2 * k2;
+
+               f1tildax[y + ly * x] = _Complex_I * (kfx) * (gtilda[y + ly * x] + k2 * ctilda[y + ly * x]);
+               f1tilday[y + ly * x] = _Complex_I * (kfy) * (gtilda[y + ly * x] + k2 * ctilda[y + ly * x]);
+            }
+         }
+
+         fftw_execute(q2x);
+         fftw_execute(q2y);
+
+         for (x = 0; x < lx; ++x)
+         {
+            for (y = 0; y < ly; ++y)
+            {
+
+               f1x[y + ly * x] = 1. * f1x[y + ly * x] / (lx * ly);
+               f1y[y + ly * x] = 1. * f1y[y + ly * x] / (lx * ly);
+
+               // printf("f1 is = %lf ", creal(f1[y+ly*x]));
+            }
+         }
+
+         for (x = 0; x < lx; ++x)
+         {
+            for (y = 0; y < ly; ++y)
+            {
+
+               f2x[y + ly * x] = creal(f1x[y + ly * x]) * M1[y + ly * x];
+               f2y[y + ly * x] = creal(f1y[y + ly * x]) * M1[y + ly * x];
+            }
+         }
+
+         fftw_execute(q1x);
+         fftw_execute(q1y);
 
          for (i = 0; i < lx; ++i)
          {
@@ -309,29 +431,35 @@ int main()
                k2 = kfx2 + kfy2;
                k4 = k2 * k2;
 
-               ctilda[j + ly * i] = 1. * (ctilda[j + ly * i] + 2 * delt * mobility[j + ly * i] * k2 * gtilda[j + ly * i]) / (1.0 + 2 * delt * mobility[j + ly * i] * k4); /* no need need to define new variable and replace ctilda values */
+               ctilda[j + ly * i] = 1. * (((1 + 0.5 * delt * k4) * ctilda[j + ly * i] + delt * (f2tildax[j + ly * i] * kfx + f2tilday[j + ly * i] * kfy) * _Complex_I) / (1 + 0.5 * delt * k4)); /* no need need to define new variable and replace ctilda values */
             }
          }
 
-         /* IFFT of final composition */
+         // saving data files
 
-         fftw_execute(s);
+         /* saving composition in 2D */
 
-         /* Normalization of composition */
-
-         for (x = 0; x < lx; ++x)
+         if (n % steps == 0)
          {
-            for (y = 0; y < ly; ++y)
+            sprintf(NAME, "Output/Data/output_%.2f.dat", n * delt);
+            fptr = fopen(NAME, "w");
 
+            for (i = 0; i < lx; i++)
             {
-               c[y + ly * x] = 1. * c[y + ly * x] / (lx * ly);
+               for (j = 0; j < ly; j++)
+               {
+                  ij = ly * i + j;
+                  fprintf(fptr, "%lf ", creal(c[ij]));
+               }
+               fprintf(fptr, "\n");
             }
+            fclose(fptr);
          }
-
-         /* Noise generation upto 1000 time steps */
 
          if (n <= 1000)
+
          {
+
             long int SEED = -949;
             long int SEED2 = -819;
             long int SEED3 = -16;
@@ -416,6 +544,7 @@ int main()
    }
 
    if ((c_avg <= pp1) && (c_avg >= pp2))
+
    {
 
       for (x = 0; x < lx; ++x)
@@ -437,34 +566,14 @@ int main()
 
       /* Running the code for given time */
 
+      printf("\nenter the total time\n");
+      // scanf("%lf", &total_time);
+      printf("%lf", total_time);
+
       total_time_steps = ((total_time) / delt);
 
       for (n = 1; n <= total_time_steps; ++n)
       {
-
-         /* Saving data to files */
-
-         time = n * delt;
-
-         if (fmod(time, time_interval) == 0)
-         {
-            char file_name[25];
-
-            sprintf(file_name, "Output/Data/output_%.2f.dat", time);
-
-            FILE *fptr;
-            fptr = fopen(file_name, "w");
-
-            for (x = 0; x < lx; ++x)
-            {
-               for (y = 0; y < ly; ++y)
-               {
-                  fprintf(fptr, "%f ", creal(c[y + ly * x]));
-               }
-               fprintf(fptr, "%f\n", creal(c[y + ly * x]));
-            }
-            fclose(fptr);
-         }
 
          /* Defining free energy */
 
@@ -472,17 +581,81 @@ int main()
          {
             for (y = 0; y < ly; ++y)
             {
-
-               g[y + ly * x] = -(4 * aa * (c[y + ly * x]) * (c[y + ly * x]) * (c[y + ly * x]) + 3 * bb * (c[y + ly * x]) * (c[y + ly * x]) + 2 * cc * (c[y + ly * x]) + dd); /* Derivative of  free energy */
-                                                                                                                                                                             // mobility[y+ly*x] = fabs(1/(12*aa*(c[y+ly*x])*(c[y+ly*x]) + 6*bb*(c[y+ly*x])+ 2*cc));
-               mobility[y + ly * x] = (c[y + ly * x]) * (1 - c[y + ly * x]);
+               // g[y+ly*x]=  (4*aa*(c[y+ly*x])*(c[y+ly*x])*(c[y+ly*x]) + 3*bb*(c[y+ly*x])*(c[y+ly*x]) + 2*cc*(c[y+ly*x]) +dd);
+               g[y + ly * x] = (Ag / Hg) * (4 * aa * (c[y + ly * x]) * (c[y + ly * x]) * (c[y + ly * x]) + 3 * bb * (c[y + ly * x]) * (c[y + ly * x]) + 2 * cc * (c[y + ly * x]) + dd);
+               // M1[y+ly*x] = fabs(1/(12*aa*(c[y+ly*x])*(c[y+ly*x]) + 6*bb*(c[y+ly*x])+ 2*cc));
+               M1[y + ly * x] = (c[y + ly * x]) * (1 - c[y + ly * x]);
             }
          }
+
+         printf("time is = %lf\n", n * delt);
 
          /* FFT of composition and  free energy */
 
          fftw_execute(q);
          fftw_execute(p);
+
+         for (x = 0; x < lx; ++x)
+         {
+            if (x < halflx)
+            {
+               kfx = x * delkx;
+            }
+
+            else
+            {
+               kfx = (x - lx) * delkx;
+            }
+            kfx2 = kfx * kfx;
+
+            for (y = 0; y < ly; ++y)
+            {
+               if (y < halfly)
+               {
+                  kfy = y * delky;
+               }
+
+               else
+               {
+                  kfy = (y - ly) * delky;
+               }
+
+               kfy2 = kfy * kfy;
+               k2 = kfx2 + kfy2;
+               k4 = k2 * k2;
+
+               f1tildax[y + ly * x] = _Complex_I * (kfx) * (gtilda[y + ly * x] + k2 * ctilda[y + ly * x]);
+               f1tilday[y + ly * x] = _Complex_I * (kfy) * (gtilda[y + ly * x] + k2 * ctilda[y + ly * x]);
+            }
+         }
+
+         fftw_execute(q2x);
+         fftw_execute(q2y);
+
+         for (x = 0; x < lx; ++x)
+         {
+            for (y = 0; y < ly; ++y)
+            {
+
+               f1x[y + ly * x] = 1. * f1x[y + ly * x] / (lx * ly);
+               f1y[y + ly * x] = 1. * f1y[y + ly * x] / (lx * ly);
+
+               // printf("f1 is = %lf ", creal(f1[y+ly*x]));
+            }
+         }
+
+         for (x = 0; x < lx; ++x)
+         {
+            for (y = 0; y < ly; ++y)
+            {
+
+               f2x[y + ly * x] = creal(f1x[y + ly * x]) * M1[y + ly * x];
+               f2y[y + ly * x] = creal(f1y[y + ly * x]) * M1[y + ly * x];
+            }
+         }
+
+         fftw_execute(q1x);
+         fftw_execute(q1y);
 
          for (i = 0; i < lx; ++i)
          {
@@ -513,7 +686,7 @@ int main()
                k2 = kfx2 + kfy2;
                k4 = k2 * k2;
 
-               ctilda[j + ly * i] = 1. * (ctilda[j + ly * i] + 2 * delt * mobility[j + ly * i] * k2 * gtilda[j + ly * i]) / (1.0 + 2 * delt * mobility[j + ly * i] * k4); /* no need need to define new variable and replace ctilda values */
+               ctilda[j + ly * i] = 1. * (((1 + 0.5 * delt * k4) * ctilda[j + ly * i] + delt * (f2tildax[j + ly * i] * kfx + f2tilday[j + ly * i] * kfy) * _Complex_I) / (1 + 0.5 * delt * k4)); /* no need need to define new variable and replace ctilda values */
             }
          }
 
@@ -528,21 +701,45 @@ int main()
             for (y = 0; y < ly; ++y)
 
             {
-               c[y + ly * x] = 1. * c[y + ly * x] / (lx * ly);
+               c[y + ly * x] = 1. * c[y + ly * x] / (lx * ly); /* can be written as c[i] *= 1./(lx*ly) */
             }
+         }
+
+         // saving data files
+
+         /* saving composition in 2D */
+
+         if (n % steps == 0)
+         {
+            sprintf(NAME, "Output/Data/output_%.2f.dat", n * delt);
+            fptr = fopen(NAME, "w");
+
+            for (i = 0; i < lx; i++)
+            {
+               for (j = 0; j < ly; j++)
+               {
+                  ij = ly * i + j;
+                  fprintf(fptr, "%lf ", creal(c[ij]));
+               }
+               fprintf(fptr, "\n");
+            }
+            fclose(fptr);
          }
       }
    }
 
    fftw_free(c);
    fftw_free(g);
-   fftw_free(mobility);
+   fftw_free(M1);
 
    fftw_destroy_plan(p);
    fftw_destroy_plan(q);
+   fftw_destroy_plan(q1x);
    fftw_destroy_plan(s);
 
    fftw_cleanup();
+
+   fclose(fp);
 
    return 0;
 }

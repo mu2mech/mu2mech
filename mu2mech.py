@@ -337,7 +337,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         # 2 - Calculation is paused
         if(self.calState == 0 or self.calState == 2):
             self.calState = 1
-            variables.data["timeInterval"] = float(
+            variables.data["timeInterval"] = int(
                 self.lineEditTimeInterval.text())
             variables.data["totalTime"] = float(
                 self.lineEditTotalTime.text())
@@ -797,7 +797,7 @@ class ViewCalcParam(Ui_DialogViewCalcParam, QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
-        self.setFixedSize(700, 440)
+        self.setFixedSize(710, 440)
         self.coff = {}
         self.coff['a'] = variables.temp_selected_coff['aa']
         self.coff['b'] = variables.temp_selected_coff['bb']

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>700</width>
+    <width>710</width>
     <height>440</height>
    </rect>
   </property>
@@ -46,8 +46,8 @@
    <property name="geometry">
     <rect>
      <x>440</x>
-     <y>11</y>
-     <width>241</width>
+     <y>12</y>
+     <width>261</width>
      <height>161</height>
     </rect>
    </property>
@@ -83,7 +83,7 @@
     <item row="2" column="0">
      <widget class="QLabel" name="labelBarrierHeight">
       <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;H (KJ/mole):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;Barrier Height (KJ/mole):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
     </item>
@@ -95,28 +95,28 @@
      </widget>
     </item>
     <item row="3" column="0">
-     <widget class="QLabel" name="labelDiffusivity">
+     <widget class="QLabel" name="labelGBEnergy">
       <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;D (m&lt;span style=&quot; vertical-align:super;&quot;&gt;2&lt;/span&gt;/sec):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;Interfacial Energy (J/m2):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
     </item>
     <item row="3" column="1">
-     <widget class="QLabel" name="labelDiffusivityValue">
+     <widget class="QLabel" name="labelGBEnergyValue">
       <property name="text">
        <string/>
       </property>
      </widget>
     </item>
     <item row="4" column="0">
-     <widget class="QLabel" name="labelGBEnergy">
+     <widget class="QLabel" name="labelDiffusivity">
       <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;σ (J/m2):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;Diffusivity (m&lt;span style=&quot; vertical-align:super;&quot;&gt;2&lt;/span&gt;/sec):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
     </item>
     <item row="4" column="1">
-     <widget class="QLabel" name="labelGBEnergyValue">
+     <widget class="QLabel" name="labelDiffusivityValue">
       <property name="text">
        <string/>
       </property>

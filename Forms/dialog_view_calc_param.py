@@ -17,7 +17,7 @@ class Ui_DialogViewCalcParam(object):
     def setupUi(self, DialogViewCalcParam):
         if not DialogViewCalcParam.objectName():
             DialogViewCalcParam.setObjectName(u"DialogViewCalcParam")
-        DialogViewCalcParam.resize(700, 440)
+        DialogViewCalcParam.resize(710, 440)
         self.frame = QFrame(DialogViewCalcParam)
         self.frame.setObjectName(u"frame")
         self.frame.setGeometry(QRect(10, 10, 420, 420))
@@ -28,7 +28,7 @@ class Ui_DialogViewCalcParam(object):
         self.labelGXPlot.setGeometry(QRect(10, 10, 400, 400))
         self.layoutWidget = QWidget(DialogViewCalcParam)
         self.layoutWidget.setObjectName(u"layoutWidget")
-        self.layoutWidget.setGeometry(QRect(440, 11, 241, 161))
+        self.layoutWidget.setGeometry(QRect(440, 12, 261, 161))
         self.gridLayout = QGridLayout(self.layoutWidget)
         self.gridLayout.setObjectName(u"gridLayout")
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
@@ -62,25 +62,25 @@ class Ui_DialogViewCalcParam(object):
 
         self.gridLayout.addWidget(self.labelBarrierHeightValue, 2, 1, 1, 1)
 
-        self.labelDiffusivity = QLabel(self.layoutWidget)
-        self.labelDiffusivity.setObjectName(u"labelDiffusivity")
-
-        self.gridLayout.addWidget(self.labelDiffusivity, 3, 0, 1, 1)
-
-        self.labelDiffusivityValue = QLabel(self.layoutWidget)
-        self.labelDiffusivityValue.setObjectName(u"labelDiffusivityValue")
-
-        self.gridLayout.addWidget(self.labelDiffusivityValue, 3, 1, 1, 1)
-
         self.labelGBEnergy = QLabel(self.layoutWidget)
         self.labelGBEnergy.setObjectName(u"labelGBEnergy")
 
-        self.gridLayout.addWidget(self.labelGBEnergy, 4, 0, 1, 1)
+        self.gridLayout.addWidget(self.labelGBEnergy, 3, 0, 1, 1)
 
         self.labelGBEnergyValue = QLabel(self.layoutWidget)
         self.labelGBEnergyValue.setObjectName(u"labelGBEnergyValue")
 
-        self.gridLayout.addWidget(self.labelGBEnergyValue, 4, 1, 1, 1)
+        self.gridLayout.addWidget(self.labelGBEnergyValue, 3, 1, 1, 1)
+
+        self.labelDiffusivity = QLabel(self.layoutWidget)
+        self.labelDiffusivity.setObjectName(u"labelDiffusivity")
+
+        self.gridLayout.addWidget(self.labelDiffusivity, 4, 0, 1, 1)
+
+        self.labelDiffusivityValue = QLabel(self.layoutWidget)
+        self.labelDiffusivityValue.setObjectName(u"labelDiffusivityValue")
+
+        self.gridLayout.addWidget(self.labelDiffusivityValue, 4, 1, 1, 1)
 
 
         self.retranslateUi(DialogViewCalcParam)
@@ -95,11 +95,11 @@ class Ui_DialogViewCalcParam(object):
         self.labelInflextionPointValue.setText("")
         self.labelBinodalPoint.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">Binodal points:</p></body></html>", None))
         self.labelBinodalPointValue.setText("")
-        self.labelBarrierHeight.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">H (KJ/mole):</p></body></html>", None))
+        self.labelBarrierHeight.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">Barrier Height (KJ/mole):</p></body></html>", None))
         self.labelBarrierHeightValue.setText("")
-        self.labelDiffusivity.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">D (m<span style=\" vertical-align:super;\">2</span>/sec):</p></body></html>", None))
-        self.labelDiffusivityValue.setText("")
-        self.labelGBEnergy.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">\u03c3 (J/m2):</p></body></html>", None))
+        self.labelGBEnergy.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">Interfacial Energy (J/m2):</p></body></html>", None))
         self.labelGBEnergyValue.setText("")
+        self.labelDiffusivity.setText(QCoreApplication.translate("DialogViewCalcParam", u"<html><head/><body><p align=\"right\">Diffusivity (m<span style=\" vertical-align:super;\">2</span>/sec):</p></body></html>", None))
+        self.labelDiffusivityValue.setText("")
     # retranslateUi
 
