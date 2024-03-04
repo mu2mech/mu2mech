@@ -259,7 +259,9 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'cAvg': 0.4,
                 'lx': 256,
                 'ly': 256,
-                'delT': 1,
+                'mobility': 1,
+                'kappa':1,
+                'delT': 0.5,
                 'delX': 0.4,
                 'delY': 0.4
             }
@@ -269,9 +271,9 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
             variables.data['parameters'] = {
                 'fluctuation': 0.0001,
                 'cAvg': 0.4,
-                'lx': 256,
-                'ly': 256,
-                'delT': 1,
+                'lx': 128,
+                'ly': 128,
+                'delT': 0.25,
                 'delX': 0.4,
                 'delY': 0.4
             }
