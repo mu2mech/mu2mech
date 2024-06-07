@@ -123,7 +123,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
 
 
     def display_char_values(self):
-        energy = variables.temp_selected_coff["a"]
+        energy = variables.temp_selected_coff["Ag"]
         length = variables.temp_selected_coff["char_length"]
         time  =  variables.temp_selected_coff["char_time"]
 
@@ -273,16 +273,18 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'cAvg': 0.4,
                 'lx': 128,
                 'ly': 128,
-                'delT': 0.25,
-                'delX': 0.4,
-                'delY': 0.4
+                'delT': 0.001,
+                'delX': 0.1,
+                'delY': 0.1
             }
             variables.data['coff'] = {
                 'aa': 0,
                 'bb': 0,
                 'cc': 0,
                 'dd': 0,
-                'ee': 0
+                'ee': 0,
+                'Ag': 0,
+                'Hg': 0 
             }
             self.source_binary = "Sources/ch2d_alloy.o"
 
@@ -767,7 +769,7 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
                 self.coff_data[str(d[0])]['cc'] = d[3]
                 self.coff_data[str(d[0])]['dd'] = d[4]
                 self.coff_data[str(d[0])]['ee'] = d[5]
-                self.coff_data[str(d[0])]['a'] = d[6]
+                self.coff_data[str(d[0])]['Ag'] = d[6]
                 self.coff_data[str(d[0])]['diffusivity'] = d[7]
                 self.coff_data[str(d[0])]['gb_energy'] = d[8]
                 self.coff_data[str(d[0])]['kappa'] = d[9]
@@ -777,7 +779,32 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
                 self.comboBoxTemperature.addItem(str(d[0]))
         except:
             print(f"Data not in correct format for {self.comboBoxAlloy.currentText()}")
-            
+
+
+    # Equation for G vs X plot
+    def fun(self,x):
+        return self.coff['a']*x**4+self.coff['b']*x**3+self.coff['c']*x**2+self.coff['d']*x+self.coff['e']
+
+    def barrier_height_non_dim(self):        
+        # Generate x values for the plot
+        x_values = np.linspace(0, 1, 1000)
+        y_values = self.fun(x_values)
+
+        # Find critical points numerically by checking where the derivative changes sign
+        f_prime = np.gradient(y_values, x_values)
+        derivative_sign_changes = np.where(np.diff(np.sign(f_prime)))[0]
+        critical_points_numerical = x_values[derivative_sign_changes]
+
+        # Evaluate the function at critical points and find the maximum and minimum values
+        function_values_numerical = self.fun(critical_points_numerical)
+        max_value_numerical = max(function_values_numerical)
+        min_value_numerical = min(function_values_numerical)
+
+        # Calculate the difference between the highest and lowest points
+        diff = max_value_numerical - min_value_numerical
+
+        return diff
+
     def save_pram_ch2d(self):
         variables.selected_alloy = self.comboBoxAlloy.currentText()
         variables.selected_temperature = self.comboBoxTemperature.currentText()
@@ -792,6 +819,21 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
         )]['dd'])
         variables.data['coff']['ee'] = str(self.coff_data[self.comboBoxTemperature.currentText(
         )]['ee'])
+        variables.data['coff']['Ag'] = str(self.coff_data[self.comboBoxTemperature.currentText(
+        )]['Ag'])
+        self.coff = {}
+        self.coff['a'] = float(variables.data['coff']['aa'])
+        self.coff['b'] = float(variables.data['coff']['bb'])
+        self.coff['c'] = float(variables.data['coff']['cc'])
+        self.coff['d'] = float(variables.data['coff']['dd'])
+        self.coff['e'] = float(variables.data['coff']['ee'])
+        self.coff['Ag'] = float(variables.data['coff']['Ag'])
+        print(variables.data['coff']['Ag'])
+        barrier_height = self.barrier_height_non_dim() * self.coff["Ag"]
+        variables.other_coff['Hg'] = barrier_height
+        print(barrier_height)
+        variables.data['coff']['Hg'] = str(barrier_height)
+
         self.close()
 
 
@@ -806,7 +848,7 @@ class ViewCalcParam(Ui_DialogViewCalcParam, QDialog):
         self.coff['c'] = variables.temp_selected_coff['cc']
         self.coff['d'] = variables.temp_selected_coff['dd']
         self.coff['e'] = variables.temp_selected_coff['ee']
-        self.coff['A'] = variables.temp_selected_coff['a']
+        self.coff['Ag'] = variables.temp_selected_coff['Ag']
         self.coff['diffusivity'] = variables.temp_selected_coff['diffusivity']
         self.coff['gb_energy'] = variables.temp_selected_coff['gb_energy']
         self.coff['kappa'] = variables.temp_selected_coff['kappa']
@@ -828,7 +870,7 @@ class ViewCalcParam(Ui_DialogViewCalcParam, QDialog):
         self.labelBinodalPointValue.setText(f'{self.binodal_points[0]:.2f}, {self.binodal_points[1]:.2f}')
 
         # Barrier height
-        barrier_height = self.barrier_height_non_dim() * self.coff["A"]
+        barrier_height = self.barrier_height_non_dim() * self.coff["Ag"]
         self.labelBarrierHeightValue.setText(f'{barrier_height:.2f}')
 
         # Diffusivity
@@ -838,7 +880,7 @@ class ViewCalcParam(Ui_DialogViewCalcParam, QDialog):
         self.labelGBEnergyValue.setText(f'{self.coff["gb_energy"]:.2f}')
 
         vfunc = np.vectorize(self.fun) 
-        y_arr = vfunc(x_arr) * self.coff['A']
+        y_arr = vfunc(x_arr) * self.coff['Ag']
         elem = variables.temp_selected_coff["elem"].split('-')[-1]
 
         # PLot G vs X

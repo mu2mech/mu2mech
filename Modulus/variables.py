@@ -9,10 +9,15 @@ data = {
     'calType': None,
     'parameters': [],
     'coff': [],
-    'timeInterval': 50,
-    'totalTime': 200,
+    'timeInterval': 1,
+    'totalTime': 10,
     'resume': 0,
     'resumeFrom': 0
+}
+
+other_coff = {
+    'Ag': 0,
+    'Hg': 0
 }
 
 alloys = None

@@ -47,6 +47,8 @@ int main()
    %s%lf\
    %s%lf\
    %s%lf\
+   %s%lf\
+   %s%lf\
    %s%d\
    %s%d\
    %s%lf\
@@ -61,6 +63,8 @@ int main()
           junk, &cc,
           junk, &dd,
           junk, &ee,
+          junk, &Ag,
+          junk, &Hg,
           junk, &fluctuation,
           junk, &c_avg,
           junk, &lx,
@@ -72,8 +76,8 @@ int main()
           junk, &total_time,
           junk, &resume,
           junk, &resume_from_str);
-          
-   printf("%d\n", steps);       
+
+   printf("%d\n", steps);
    printf("%lf\n", total_time);
    printf("%d\n", resume);
    printf("%s\n", resume_from_str);
@@ -177,15 +181,6 @@ int main()
    ee=0.0081;
    */
 
-   /* for fe-Cr at 500 C */
-
-   aa = 1;
-   bb = -2.0920;
-   cc = 1.4299;
-   dd = -0.3513;
-   ee = 0.0282;
-   Ag = 35.00;
-   Hg = 0.93;
 
    /* for fe-Cu at 1300 C
 
