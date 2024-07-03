@@ -38,8 +38,8 @@ int main()
    %s%d\
    %s%d\
    %s%d\
-   %s%lf\
    %s%d\
+   %s%lf\
    %s%lf\
    %s%lf\
    %s%lf\
@@ -51,8 +51,8 @@ int main()
            junk, &lx,
            junk, &ly,
            junk, &M,
-           junk, &delt,
            junk, &k,
+           junk, &delt,
            junk, &delx,
            junk, &dely,
            junk, &time_interval,

@@ -110,12 +110,13 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
 
     def start_calc(self):
         print("starting calculation")
-        self.display_char_values()
+        if(variables.data['calType'] == "Cahn Hilliard 2D alloy" or variables.data['calType'] == "Cahn Hilliard 3D alloy"): 
+            self.display_char_values()
         # For running jobs in normal servers
         if(self.calc_process == None):
             self.calc_thread_status = True
             self.calc_process = QProcess()
-            # print(self.source_binary)
+            print(self.source_binary)
             self.calc_process.start(self.source_binary, [])
             self.set_progress_status()
             self.calc_process.finished.connect(self.calc_completed)
