@@ -296,7 +296,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'lx': 32,
                 'ly': 32,
                 'lz': 32,
-                'delT': 1,
+                'delT': 0.001,
                 'delX': 0.4,
                 'delY': 0.4,
                 'delZ': 0.4
@@ -1017,7 +1017,7 @@ class ParamCH3DAlloy(Ui_DialogParamCH3DAlloy, QDialog):
                 self.coff_data[str(d[0])]['cc'] = d[3]
                 self.coff_data[str(d[0])]['dd'] = d[4]
                 self.coff_data[str(d[0])]['ee'] = d[5]
-                self.coff_data[str(d[0])]['a'] = d[6]
+                self.coff_data[str(d[0])]['Ag'] = d[6]
                 self.coff_data[str(d[0])]['diffusivity'] = d[7]
                 self.coff_data[str(d[0])]['gb_energy'] = d[8]
                 self.coff_data[str(d[0])]['kappa'] = d[9]
@@ -1027,6 +1027,7 @@ class ParamCH3DAlloy(Ui_DialogParamCH3DAlloy, QDialog):
                 self.comboBoxTemperature.addItem(str(d[0]))
         except:
             print(f"Data not in correct format for {self.comboBoxAlloy.currentText()}")
+
             
     def save_pram_ch3d(self):
         variables.data = utils.lineedit_string_to_data(self, variables.data)
