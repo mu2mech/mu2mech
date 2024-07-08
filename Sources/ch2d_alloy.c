@@ -17,13 +17,13 @@ int main()
 {
 
    /* Data initialization */
-   int lx, ly, M, k, x, y, n, N, i, j, ij, m, total_time_steps;
+   int lx, ly, M, k, x, y, n, N, i, j, ij, m, total_time_time_interval;
    double delt, total_time, delkx, delky, halflx, halfly, kfx, kfy, kfx2, kfy2, k2, k4, delx, dely, c_avg, fluctuation;
    char junk[100];
 
    char NAME[50];
-   int steps = 100; // steps after which composition need to be printed//
-
+   double time_interval = 100; // time_interval after which composition need to be printed//
+   double time;
    int resume;
    char resume_from_str[10];
    double resume_from;
@@ -54,7 +54,7 @@ int main()
    %s%lf\
    %s%lf\
    %s%lf\
-   %s%d\
+   %s%lf\
    %s%lf\
    %s%d\
    %s%s",
@@ -72,15 +72,16 @@ int main()
           junk, &delt,
           junk, &delx,
           junk, &dely,
-          junk, &steps,
+          junk, &time_interval,
           junk, &total_time,
           junk, &resume,
           junk, &resume_from_str);
 
-   printf("%d\n", steps);
-   printf("%lf\n", total_time);
-   printf("%d\n", resume);
-   printf("%s\n", resume_from_str);
+   // printf("%lf\n", dely);
+   // printf("%lf\n", time_interval);
+   // printf("%lf\n", total_time);
+   // printf("%d\n", resume);
+   // printf("%s\n", resume_from_str);
 
    fftw_complex *c, *ctilda, *g, *gtilda, *M1, *f1x, *f1y, *f1tildax, *f1tilday, *f2x, *f2y, *f2tildax, *f2tilday;
    fftw_plan p, q, q1x, q2x, q1y, q2y, s;
@@ -305,14 +306,9 @@ int main()
       halfly = (int)ly / 2.0;
 
       /* Running the code for given time */
+      total_time_time_interval = ((total_time) / delt);
 
-      printf("\nenter the total time\n");
-      // scanf("%lf", &total_time);
-      printf("%lf", total_time);
-
-      total_time_steps = ((total_time) / delt);
-
-      for (n = 1; n <= total_time_steps; ++n)
+      for (n = 1; n <= total_time_time_interval; ++n)
       {
 
          /* Defining free energy */
@@ -433,8 +429,8 @@ int main()
          // saving data files
 
          /* saving composition in 2D */
-
-         if (n % steps == 0)
+         time = n * delt;
+         if (fmod(time, time_interval) == 0)
          {
             sprintf(NAME, "Output/Data/output_%.2f.dat", n * delt);
             fptr = fopen(NAME, "w");
@@ -565,9 +561,9 @@ int main()
       // scanf("%lf", &total_time);
       printf("%lf", total_time);
 
-      total_time_steps = ((total_time) / delt);
+      total_time_time_interval = ((total_time) / delt);
 
-      for (n = 1; n <= total_time_steps; ++n)
+      for (n = 1; n <= total_time_time_interval; ++n)
       {
 
          /* Defining free energy */
@@ -703,8 +699,10 @@ int main()
          // saving data files
 
          /* saving composition in 2D */
-
-         if (n % steps == 0)
+         time = n * delt;
+         // double m = fmod(time, time_interval);
+         // printf("%d, %lf\n",n,m);
+         if (fmod(time, time_interval) == 0)
          {
             sprintf(NAME, "Output/Data/output_%.2f.dat", n * delt);
             fptr = fopen(NAME, "w");

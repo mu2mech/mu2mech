@@ -342,7 +342,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         # 2 - Calculation is paused
         if(self.calState == 0 or self.calState == 2):
             self.calState = 1
-            variables.data["timeInterval"] = int(
+            variables.data["timeInterval"] = float(
                 self.lineEditTimeInterval.text())
             variables.data["totalTime"] = float(
                 self.lineEditTotalTime.text())
