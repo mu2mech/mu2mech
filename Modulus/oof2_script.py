@@ -1,5 +1,7 @@
 def step1(data):
     oof2_script_str = f"OOF.Windows.Graphics.New()  \n" \
+        f"OOF.Graphics_1.Settings.New_Layer_Policy(policy='Single') \n" \
+        f"OOF.Microstructure.Create_From_ImageFile(filename='{data['output_path']}/{data['image_name']}', microstructure_name='{data['image_name']}', height=automatic, width=automatic) \n" \
         f"OOF.PixelGroup.New(name='phase_1', microstructure='{data['image_name']}') \n" \
         f"OOF.PixelGroup.New(name='phase_2', microstructure='{data['image_name']}') \n" \
         f"OOF.Graphics_1.Toolbox.Pixel_Select.Burn(source='{data['image_name']}:{data['image_name']}', local_flammability=0.1, global_flammability=0.2, color_space_norm='L1', next_nearest=False, points=[Point({data['coordinate']['x']},{data['coordinate']['y']})], shift=0, ctrl=0) \n" \
@@ -72,6 +74,8 @@ def step1(data):
 
 def step2(data):
     oof2_script_str = f"OOF.Windows.Graphics.New()  \n" \
+        f"OOF.Graphics_1.Settings.New_Layer_Policy(policy='Single') \n" \
+        f"OOF.Microstructure.Create_From_ImageFile(filename='{data['output_path']}/{data['image_name']}', microstructure_name='{data['image_name']}', height=automatic, width=automatic) \n" \
         f"OOF.PixelGroup.New(name='phase_1', microstructure='{data['image_name']}')  \n" \
         f"OOF.PixelGroup.New(name='phase_2', microstructure='{data['image_name']}')  \n" \
         f"OOF.Graphics_1.Toolbox.Pixel_Select.Burn(source='{data['image_name']}:{data['image_name']}', local_flammability=0.1, global_flammability=0.2, color_space_norm='L1', next_nearest=False, points=[Point({data['coordinate']['x']},{data['coordinate']['y']})], shift=0, ctrl=0)  \n" \

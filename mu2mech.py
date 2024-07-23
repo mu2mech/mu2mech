@@ -217,6 +217,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         self.pushButtonStartStopResume.setEnabled(True)
         self.pushButtonStartStopResume.setText("Resume")
         self.pushButtonStartStopResume.setEnabled(True)
+        self.pushButtonPlot.setEnabled(True)
 
         self.get_completed_calc_list()
         self.slider_init()
