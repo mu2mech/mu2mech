@@ -107,20 +107,133 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         self.labelStatus.setText("Performing calculation ...")
         self.labelStatus.setStyleSheet('color: black')
         self.labelStatus.repaint()
+        
 
     def start_calc(self):
         print("starting calculation")
-        if(variables.data['calType'] == "Cahn Hilliard 2D alloy" or variables.data['calType'] == "Cahn Hilliard 3D alloy"): 
-            self.display_char_values()
-        # For running jobs in normal servers
-        if(self.calc_process == None):
-            self.calc_thread_status = True
-            self.calc_process = QProcess()
-            print(self.source_binary)
-            self.calc_process.start(self.source_binary, [])
-            self.set_progress_status()
-            self.calc_process.finished.connect(self.calc_completed)
-        self.calc_running()
+        
+        # Validate calType before proceeding
+        if 'calType' not in variables.data:
+            print("Error: calType not found in variables.data")
+            return
+        
+        # Check if it's a Cahn Hilliard calculation type
+        if variables.data['calType'] in ["Cahn Hilliard 2D alloy", "Cahn Hilliard 3D alloy"]: 
+            try:
+                self.display_char_values()
+            except Exception as e:
+                print(f"Error in display_char_values: {e}")
+        
+        # Check if source_binary is defined and exists
+        if not hasattr(self, 'source_binary') or not self.source_binary:
+            print("Error: Source binary not specified")
+            return
+        
+        # Ensure calc_process is None before starting
+        if self.calc_process is None:
+            try:
+                self.calc_thread_status = True
+                self.calc_process = QProcess()
+                print(f"Starting binary: {self.source_binary}")
+                
+                # Check if binary exists and is executable
+                if not os.path.isfile(self.source_binary) or not os.access(self.source_binary, os.X_OK):
+                    print(f"Error: Binary {self.source_binary} does not exist or is not executable")
+                    self.calc_process = None
+                    return
+                
+                # Setup output handling
+                def handle_standard_output():
+                    try:
+                        output = bytes(self.calc_process.readAllStandardOutput()).decode('utf-8').strip()
+                        if output:
+                            print("Process Output:", output)
+                            # If you need to update GUI, use Qt's signal/slot mechanism
+                            # For example: self.output_signal.emit(output)
+                    except Exception as e:
+                        print(f"Error processing standard output: {e}")
+                
+                def handle_standard_error():
+                    try:
+                        error = bytes(self.calc_process.readAllStandardError()).decode('utf-8').strip()
+                        if error:
+                            print("Process Error Output:", error)
+                    except Exception as e:
+                        print(f"Error processing standard error: {e}")
+                
+                def process_finished(exit_code, exit_status):
+                    try:
+                        # Safe method call if 'cal' exists
+                        if hasattr(self, 'cal'):
+                            self.cal()
+                    except Exception as e:
+                        print(f"Error in cal method: {e}")
+                    
+                    # Reset process status
+                    self.calc_process = None
+                    self.calc_thread_status = False
+                    self.calc_completed()
+                
+                def process_error(error):
+                    error_messages = {
+                        QProcess.FailedToStart: "Failed to start the process",
+                        QProcess.Crashed: "Process crashed",
+                        QProcess.Timedout: "Process timed out",
+                        QProcess.WriteError: "An error occurred when attempting to write to the process",
+                        QProcess.ReadError: "An error occurred when attempting to read from the process",
+                        QProcess.UnknownError: "An unknown error occurred"
+                    }
+                    
+                    error_message = error_messages.get(error, f"Unknown error: {error}")
+                    print(f"Process Error: {error_message}")
+                    
+                    # Reset process status
+                    self.calc_process = None
+                    self.calc_thread_status = False
+                
+                # Connect output handlers
+                self.calc_process.readyReadStandardOutput.connect(handle_standard_output)
+                self.calc_process.readyReadStandardError.connect(handle_standard_error)
+                
+                # Connect signals
+                self.calc_process.finished.connect(process_finished)
+                self.calc_process.errorOccurred.connect(process_error)
+                
+                # Start the process
+                self.calc_process.start(self.source_binary, [])
+                
+                # Call progress status method if it exists
+                if hasattr(self, 'set_progress_status'):
+                    self.set_progress_status()
+            
+            except Exception as e:
+                print(f"Error starting calculation process: {e}")
+                import traceback
+                traceback.print_exc()
+                self.calc_process = None
+                self.calc_thread_status = False
+        
+        # Try to call calc_running method
+        try:
+            if hasattr(self, 'calc_running'):
+                self.calc_running()
+        except Exception as e:
+            print(f"Error in calc_running: {e}")
+            
+            
+    # def start_calc(self):
+    #     print("starting calculation")
+    #     if(variables.data['calType'] == "Cahn Hilliard 2D alloy" or variables.data['calType'] == "Cahn Hilliard 3D alloy"): 
+    #         self.display_char_values()
+    #     # For running jobs in normal servers
+    #     if(self.calc_process == None):
+    #         self.calc_thread_status = True
+    #         self.calc_process = QProcess()
+    #         print(self.source_binary)
+    #         self.calc_process.start(self.source_binary, [])
+    #         self.set_progress_status()
+    #         self.calc_process.finished.connect(self.cal)
+    #     self.calc_running()
 
 
     def display_char_values(self):

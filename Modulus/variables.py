@@ -10,7 +10,7 @@ data = {
     'parameters': [],
     'coff': [],
     'timeInterval': 1,
-    'totalTime': 10,
+    'totalTime': 3,
     'resume': 0,
     'resumeFrom': 0
 }
