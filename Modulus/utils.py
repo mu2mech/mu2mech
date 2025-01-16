@@ -101,15 +101,17 @@ def convert_to_video(images_path, file_path, time_interval):
 
 
 # Remove transparency and resize image
-def trim_image(image_path):
+def trim_image(image_path, variables):
     im = Image.open(image_path)
     im.getbbox()
     im = im.crop(im.getbbox())
     width, height = im.size
     left, top, right, bottom = 1, 1, width-1, height-1
     im1 = im.crop((left, top, right, bottom))
-    # newsize = (size_x, size_y)
-    # im1 = im1.resize(newsize)
+    width = int(variables.data['parameters']['lx'])
+    height = int(variables.data['parameters']['ly'])
+    newsize = (width, height)
+    im1 = im1.resize(newsize)
     im1.save(image_path)
 
 
@@ -163,7 +165,7 @@ def convert_save_2d_vtk(time, image_path, actor_mesh, variables):
     plotter.camera_position = 'xy'
     plotter.camera.zoom(1.2)
     plotter.screenshot(image_path, transparent_background=True)
-    trim_image(image_path)
+    trim_image(image_path,variables)
     plotter.close()
     plotter.deep_clean()
     return actor_mesh

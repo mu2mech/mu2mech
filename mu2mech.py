@@ -1531,7 +1531,7 @@ class OOF2Calculation(Ui_DialogOOF2Calculation, QDialog):
 
         self.image_path = f"{self.output_path}/output_{variables.current_time:.2f}.png"
         self.plotter.screenshot(self.image_path, transparent_background=True)
-        utils.trim_image(self.image_path)
+        utils.trim_image(self.image_path, variables)
 
     def closeEvent(self, event):
         print(variables.oof2_param)
