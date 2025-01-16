@@ -31,6 +31,8 @@ import threading
 import os
 import shutil
 
+# Set the OpenGL version override
+os.environ["MESA_GL_VERSION_OVERRIDE"] = "3.2"
 
 class Ui_PhaseField (Ui_MainWindow, QMainWindow):
     def __init__(self, parent=None):
