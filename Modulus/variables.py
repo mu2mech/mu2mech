@@ -81,8 +81,8 @@ oof2_param = {
         }
     },
     'mesh': {
-        'x_elements': '10',
-        'y_elements': '10',
+        'x_elements': '64',
+        'y_elements': '64',
         'element_type':'TriSkeleton'
     }
 }

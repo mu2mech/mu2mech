@@ -30,6 +30,9 @@ import numpy as np
 import threading
 import os
 import shutil
+import warnings
+
+warnings.filterwarnings('ignore')
 
 # Set the OpenGL version override
 os.environ["MESA_GL_VERSION_OVERRIDE"] = "3.2"
