@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore")
+
 from PySide2.QtWidgets import QApplication, QMainWindow, QDialog, QFileDialog, QSlider, QLabel, QVBoxLayout, QWidget, QFrame, QAction, QSplashScreen
 from PySide2.QtCore import Qt, QProcess, QCoreApplication, QObject, QThread, Signal, SIGNAL
 from PySide2.QtGui import QCursor, QIcon, QPixmap, QTextCursor, QColor
@@ -30,9 +33,6 @@ import numpy as np
 import threading
 import os
 import shutil
-import warnings
-
-warnings.filterwarnings('ignore')
 
 # Set the OpenGL version override
 os.environ["MESA_GL_VERSION_OVERRIDE"] = "3.2"
@@ -521,6 +521,13 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
 
     # Gets called when slider is moved
     def slider_moved(self):
+        try:
+            # Disable any existing point picking to avoid the error
+            self.plotter.disable_picking()
+        except Exception as e:
+            # Optionally log or print the exception if needed
+            print(f"Warning: {e}")
+    
         self.slider_current_pos = self.horizontalSlider.value()
         time = self.horizontalSlider.value()*self.slider_time_diff
         width = self.plotLabel.width()
