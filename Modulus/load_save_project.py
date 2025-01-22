@@ -3,11 +3,11 @@ from Modulus import utils
 import yaml
 import os
 import shutil
-import glob
+import stat
 
 
 # Saves project
-def save(file_path, data):
+def save(file_path, data, mu2mech_dir):
 
     # Creates directory
     os.mkdir(file_path)
@@ -21,7 +21,7 @@ def save(file_path, data):
     root_src_dir = os.getcwd()+'/Output'  # Path/Location of the Output directory
     root_dst_dir = file_path+'/Output'   # Path to the destination folder
 
-    utils.write_input(data, f"{file_path}/Sources/input.dat")
+    utils.write_input(data, f"{file_path}/input.dat")
 
     if (data['calType'] == "Cahn Hilliard 1D"):
         source = "Sources/ch1d.o"
@@ -32,10 +32,10 @@ def save(file_path, data):
     elif (data['calType'] == "Cahn Hilliard 3D alloy"):
         source = "Sources/ch3d_alloy.o"
 
-    shutil.copyfile(source, f"{file_path}/{source}")
-    # shutil.copyfile("Sources/nrutil.c", f"{file_path}/Sources/nrutil.c")
-    # shutil.copyfile("Sources/gasdev.c", f"{file_path}/Sources/gasdev.c")
-    # shutil.copyfile("Sources/Makefile", f"{file_path}/Sources/Makefile")
+    os.makedirs(f"{file_path}/Sources", exist_ok=True)
+    source_path = f"{mu2mech_dir}/{source}"
+    destination_path = f"{file_path}/{source}"
+    shutil.copyfile(source_path, f"{file_path}/{source}")
     copy_files_dirs(root_src_dir, root_dst_dir)
 
 
@@ -59,7 +59,6 @@ def load(file_path):
 
     # Delete unnecessary config file
     utils.delete_files(os.getcwd()+'/Output/'+file_name)
-    print(data)
     return data
 
 

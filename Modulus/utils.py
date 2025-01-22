@@ -13,8 +13,8 @@ import yaml
 def write_input(data, file_path):
     input_arr = []
     if(data['calType'] == "Cahn Hilliard 2D alloy" or data['calType'] == "Cahn Hilliard 3D alloy"):
-        for key in data['coff']:
-            input_arr.append(f'{key} {data["coff"][key]}')
+        for key in data['cof']:
+            input_arr.append(f'{key} {data["cof"][key]}')
 
     for key in data['parameters']:
         input_arr.append(f'{key} {data["parameters"][key]}')
@@ -25,7 +25,7 @@ def write_input(data, file_path):
     input_arr.append(f'resumeFrom {data["resumeFrom"]:.2f}')
 
     # Writes input.dat file
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    # os.makedirs(os.path.dirname(file_path), exist_ok=True)
     input_file = open(file_path, "w")
     for row in input_arr:
         input_file.write(row+"\n")

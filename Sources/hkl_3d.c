@@ -41,7 +41,7 @@ int main()
 
     /* Creating a file and Getting data from input file */
     FILE *fp;
-    fp = fopen("Sources/input.dat", "r");
+    fp = fopen("input.dat", "r");
     if (fp == NULL)
     {
         printf("Cannot open file");

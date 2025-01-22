@@ -34,7 +34,7 @@ int main()
    FILE *fptr;
    FILE *fptr8;
    FILE *fp;
-   fp = fopen("Sources/input.dat", "r");
+   fp = fopen("input.dat", "r");
    if (fp == NULL)
    {
       printf("Cannot open file");
@@ -77,11 +77,6 @@ int main()
           junk, &resume,
           junk, &resume_from_str);
 
-   // printf("%lf\n", dely);
-   // printf("%lf\n", time_interval);
-   // printf("%lf\n", total_time);
-   // printf("%d\n", resume);
-   // printf("%s\n", resume_from_str);
 
    fftw_complex *c, *ctilda, *g, *gtilda, *M1, *f1x, *f1y, *f1tildax, *f1tilday, *f2x, *f2y, *f2tildax, *f2tilday;
    fftw_plan p, q, q1x, q2x, q1y, q2y, s;
@@ -133,7 +128,6 @@ int main()
    {
 
       /* Loading initial composition */
-
       FILE *fp;
       char fName[30] = "";
       strcat(fName, "Output/Data/output_");
@@ -155,22 +149,6 @@ int main()
          fscanf(fp, "%lf", &c[y + ly * x]);
       }
    }
-
-   /* Saving initial profile*/
-
-   // sprintf(NAME, "output/comp0.txt");
-   // fptr = fopen(NAME, "w");
-
-   // for (i = 0; i < lx; i++)
-   // {
-   //    for (j = 0; j < ly; j++)
-   //    {
-   //       ij = ly * i + j;
-   //       fprintf(fptr, "%lf ", creal(c[ij]));
-   //    }
-   //    fprintf(fptr, "\n");
-   // }
-   // fclose(fptr);
 
    /* for fe-Cr at 400 C */
 
@@ -195,7 +173,7 @@ int main()
    pp1 = (-6 * bb + sqrt(36 * bb * bb - 96 * aa * cc)) / (24 * aa);
    pp2 = (-6 * bb - sqrt(36 * bb * bb - 96 * aa * cc)) / (24 * aa);
 
-   printf("\n pp1=%lf pp2= %lf", pp1, pp2);
+   // printf("\n pp1=%lf pp2= %lf", pp1, pp2);
 
    int rand1, rand2, rand3, rand4;
 
@@ -324,7 +302,6 @@ int main()
             }
          }
 
-         printf("time is = %lf\n", n * delt);
 
          /* FFT of composition and  free energy */
 
@@ -372,11 +349,8 @@ int main()
          {
             for (y = 0; y < ly; ++y)
             {
-
                f1x[y + ly * x] = 1. * f1x[y + ly * x] / (lx * ly);
                f1y[y + ly * x] = 1. * f1y[y + ly * x] / (lx * ly);
-
-               // printf("f1 is = %lf ", creal(f1[y+ly*x]));
             }
          }
 
@@ -557,10 +531,6 @@ int main()
 
       /* Running the code for given time */
 
-      printf("\nenter the total time\n");
-      // scanf("%lf", &total_time);
-      printf("%lf", total_time);
-
       total_time_time_interval = ((total_time) / delt);
 
       for (n = 1; n <= total_time_time_interval; ++n)
@@ -579,7 +549,7 @@ int main()
             }
          }
 
-         printf("time is = %lf\n", n * delt);
+         // printf("time is = %lf\n", n * delt);
 
          /* FFT of composition and  free energy */
 
@@ -627,11 +597,8 @@ int main()
          {
             for (y = 0; y < ly; ++y)
             {
-
                f1x[y + ly * x] = 1. * f1x[y + ly * x] / (lx * ly);
                f1y[y + ly * x] = 1. * f1y[y + ly * x] / (lx * ly);
-
-               // printf("f1 is = %lf ", creal(f1[y+ly*x]));
             }
          }
 
@@ -701,7 +668,6 @@ int main()
          /* saving composition in 2D */
          time = n * delt;
          // double m = fmod(time, time_interval);
-         // printf("%d, %lf\n",n,m);
          if (fmod(time, time_interval) == 0)
          {
             sprintf(NAME, "Output/Data/output_%.2f.dat", n * delt);

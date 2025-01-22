@@ -37,6 +37,9 @@ import shutil
 # Set the OpenGL version override
 os.environ["MESA_GL_VERSION_OVERRIDE"] = "3.2"
 
+mu2mech_dir = os.path.dirname(os.path.abspath(__file__))
+print(f"Running mu2mech in {mu2mech_dir}")
+
 class Ui_PhaseField (Ui_MainWindow, QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -44,7 +47,6 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         self.setupUi(self)
         self.setFixedSize(860, 680)
       
-
         self.pushButtonPlot.setEnabled(False)
         self.pushButtonEdit.clicked.connect(self.edit_prameters)
         self.pushButtonPostProcessing.clicked.connect(self.post_processing)
@@ -69,16 +71,21 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
 
         self.pushButtonLeft.clicked.connect(self.plot_left)
         self.pushButtonRight.clicked.connect(self.plot_right)
-        self.pushButtonLeft.setIcon(QIcon('Images/Icons/left_arrow.png'))
-        self.pushButtonRight.setIcon(QIcon('Images/Icons/right_arrow.png'))
-
+        self.pushButtonLeft.setIcon(QIcon(f'{mu2mech_dir}/Images/Icons/left_arrow.png'))
+        self.pushButtonRight.setIcon(QIcon(f'{mu2mech_dir}/Images/Icons/right_arrow.png'))
         self.actionPlotColors.triggered.connect(self.select_plot_colors)
 
-        # Delete old files
-        utils.delete_files("./Output/PostData/*.dat")
-        utils.delete_files("./Output/Data/*.dat")
-        utils.delete_files("./Output/Img/*.png")
-        utils.delete_files("./PostProcessing/Plots/*.png")
+        # List of directories to create
+        directories = [
+            "Output/PostData/",
+            "Output/Data/",
+            "Output/Img/",
+            "PostProcessing/Plots/"
+        ]
+
+        # Create each directory if it does not exist
+        for directory in directories:
+            os.makedirs(directory, exist_ok=True)
 
         # add the pyvista interactor object
         self.vlayout = QVBoxLayout()
@@ -96,9 +103,6 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         self.save_process = None
 
         self.slider_current_pos = 0
-
-        # Close the splash screen
-        splash.close()
 
     def select_plot_colors(self):
         PlotColors(self).exec_()
@@ -178,7 +182,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                     self.calc_process = None
                     self.calc_thread_status = False
                     self.calc_completed()
-                
+
                 def process_error(error):
                     error_messages = {
                         QProcess.FailedToStart: "Failed to start the process",
@@ -225,21 +229,6 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         except Exception as e:
             print(f"Error in calc_running: {e}")
             
-            
-    # def start_calc(self):
-    #     print("starting calculation")
-    #     if(variables.data['calType'] == "Cahn Hilliard 2D alloy" or variables.data['calType'] == "Cahn Hilliard 3D alloy"): 
-    #         self.display_char_values()
-    #     # For running jobs in normal servers
-    #     if(self.calc_process == None):
-    #         self.calc_thread_status = True
-    #         self.calc_process = QProcess()
-    #         print(self.source_binary)
-    #         self.calc_process.start(self.source_binary, [])
-    #         self.set_progress_status()
-    #         self.calc_process.finished.connect(self.cal)
-    #     self.calc_running()
-
 
     def display_char_values(self):
         energy = variables.temp_selected_coff["Ag"]
@@ -310,7 +299,8 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
 
         variables.data['totalTime'] = int(self.lineEditTotalTime.text())
         variables.data['timeInterval' ] = int(self.lineEditTimeInterval.text())
-        load_save_project.save(file_path, variables.data)
+        load_save_project.save(file_path, variables.data, mu2mech_dir)
+        print(f"Project saved to folder {file_path}")
         self.labelStatus.setText("Project saved")
         self.labelStatus.setStyleSheet('color: green')
 
@@ -321,6 +311,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         self.labelStatus.setText("Loading Project..")
         self.labelStatus.setStyleSheet('color: black')
         variables.data = load_save_project.load(file_path)
+        print(f"Project loaded:  {file_path}")
         self.labelStatus.setText("Project loaded")
         self.labelStatus.setStyleSheet('color: green')
 
@@ -347,13 +338,13 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         self.labelCurrentStatus.setText(str(self.time_arr[-1]))
 
         if (variables.data['calType'] == "Cahn Hilliard 1D"):
-            self.source_binary = "Sources/ch1d.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch1d.o"
         elif (variables.data['calType'] == "Cahn Hilliard 2D"):
-            self.source_binary = "Sources/ch2d_qualitative.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch2d_qualitative.o"
         elif (variables.data['calType'] == "Cahn Hilliard 2D alloy"):
-            self.source_binary = "Sources/ch2d_alloy.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch2d_alloy.o"
         elif (variables.data['calType'] == "Cahn Hilliard 3D alloy"):
-            self.source_binary = "Sources/ch3d_alloy.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch3d_alloy.o"
         print(self.source_binary)
 
     def export_animation(self):
@@ -371,7 +362,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'delX': 0.5,
                 'dTilda': 1.0
             }
-            self.source_binary = "Sources/ch1d.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch1d.o"
 
         elif (variables.data['calType'] == "Cahn Hilliard 2D"):
             variables.data['parameters'] = {
@@ -385,7 +376,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'delX': 0.4,
                 'delY': 0.4
             }
-            self.source_binary = "Sources/ch2d_qualitative.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch2d_qualitative.o"
 
         elif (variables.data['calType'] == "Cahn Hilliard 2D alloy"):
             variables.data['parameters'] = {
@@ -397,7 +388,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'delX': 0.1,
                 'delY': 0.1
             }
-            variables.data['coff'] = {
+            variables.data['cof'] = {
                 'aa': 0,
                 'bb': 0,
                 'cc': 0,
@@ -406,7 +397,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'Ag': 0,
                 'Hg': 0 
             }
-            self.source_binary = "Sources/ch2d_alloy.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch2d_alloy.o"
 
         elif (variables.data['calType'] == "Cahn Hilliard 3D alloy"):
             variables.data['parameters'] = {
@@ -420,14 +411,14 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'delY': 0.4,
                 'delZ': 0.4
             }
-            variables.data['coff'] = {
+            variables.data['cof'] = {
                 'aa': 0,
                 'bb': 0,
                 'cc': 0,
                 'dd': 0,
                 'ee': 0,
             }
-            self.source_binary = "Sources/ch3d_alloy.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch3d_alloy.o"
 
         self.lineEditTimeInterval.setText(
             str(variables.data['timeInterval']))
@@ -467,7 +458,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 self.lineEditTotalTime.text())
 
             # write input.dat
-            utils.write_input(variables.data, "Sources/input.dat")
+            utils.write_input(variables.data, "input.dat")
 
             self.start_calc()
 
@@ -836,7 +827,7 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
         for e in eval_arr:
             eval(e)     
         
-        files_list = os.listdir("TC_Data/Coff/")
+        files_list = os.listdir(f"{mu2mech_dir}/TC_Data/Coff/")
         variables.alloys = []
         
         # Replace the '.csv' extension with an empty string
@@ -864,7 +855,7 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
         self.dialogPhaseDiagarm.setFixedSize(800, 800)
         self.dialogPhaseDiagarm.setWindowTitle(QCoreApplication.translate(
             "DialogPhaseDiagram", f'{self.comboBoxAlloy.currentText()} Phase Diagram', None))
-        self.img_path = f'TC_Data/Phase_Diagram/{self.comboBoxAlloy.currentText()}.png'
+        self.img_path = f'{mu2mech_dir}/TC_Data/Phase_Diagram/{self.comboBoxAlloy.currentText()}.png'
         pixmap = QPixmap(self.img_path)
         width = 800
         height = 800
@@ -880,7 +871,7 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
         
     def load_temperature_data(self):
         try:
-            file_path = f'TC_Data/Coff/{self.comboBoxAlloy.currentText()}.csv'
+            file_path = f'{mu2mech_dir}/TC_Data/Coff/{self.comboBoxAlloy.currentText()}.csv'
         except:
             print("File does not exist")
         loaded_data = np.genfromtxt(file_path, delimiter=',')
@@ -936,30 +927,28 @@ class ParamCH2DAlloy(Ui_DialogParamCH2DAlloy, QDialog):
         variables.selected_alloy = self.comboBoxAlloy.currentText()
         variables.selected_temperature = self.comboBoxTemperature.currentText()
         variables.data = utils.lineedit_string_to_data(self, variables.data)
-        variables.data['coff']['aa'] = str(self.coff_data[self.comboBoxTemperature.currentText(
+        variables.data['cof']['aa'] = str(self.coff_data[self.comboBoxTemperature.currentText(
         )]['aa'])
-        variables.data['coff']['bb'] = str(self.coff_data[self.comboBoxTemperature.currentText(
+        variables.data['cof']['bb'] = str(self.coff_data[self.comboBoxTemperature.currentText(
         )]['bb'])
-        variables.data['coff']['cc'] = str(self.coff_data[self.comboBoxTemperature.currentText(
+        variables.data['cof']['cc'] = str(self.coff_data[self.comboBoxTemperature.currentText(
         )]['cc'])
-        variables.data['coff']['dd'] = str(self.coff_data[self.comboBoxTemperature.currentText(
+        variables.data['cof']['dd'] = str(self.coff_data[self.comboBoxTemperature.currentText(
         )]['dd'])
-        variables.data['coff']['ee'] = str(self.coff_data[self.comboBoxTemperature.currentText(
+        variables.data['cof']['ee'] = str(self.coff_data[self.comboBoxTemperature.currentText(
         )]['ee'])
-        variables.data['coff']['Ag'] = str(self.coff_data[self.comboBoxTemperature.currentText(
+        variables.data['cof']['Ag'] = str(self.coff_data[self.comboBoxTemperature.currentText(
         )]['Ag'])
         self.coff = {}
-        self.coff['a'] = float(variables.data['coff']['aa'])
-        self.coff['b'] = float(variables.data['coff']['bb'])
-        self.coff['c'] = float(variables.data['coff']['cc'])
-        self.coff['d'] = float(variables.data['coff']['dd'])
-        self.coff['e'] = float(variables.data['coff']['ee'])
-        self.coff['Ag'] = float(variables.data['coff']['Ag'])
-        print(variables.data['coff']['Ag'])
+        self.coff['a'] = float(variables.data['cof']['aa'])
+        self.coff['b'] = float(variables.data['cof']['bb'])
+        self.coff['c'] = float(variables.data['cof']['cc'])
+        self.coff['d'] = float(variables.data['cof']['dd'])
+        self.coff['e'] = float(variables.data['cof']['ee'])
+        self.coff['Ag'] = float(variables.data['cof']['Ag'])
         barrier_height = self.barrier_height_non_dim() * self.coff["Ag"]
         variables.other_coff['Hg'] = barrier_height
-        print(barrier_height)
-        variables.data['coff']['Hg'] = str(barrier_height)
+        variables.data['cof']['Hg'] = str(barrier_height)
 
         self.close()
 
@@ -1014,7 +1003,7 @@ class ViewCalcParam(Ui_DialogViewCalcParam, QDialog):
         fig = plt.figure(figsize=(4, 5), dpi=300)
         ax = fig.add_subplot()
         plt.plot(x_arr, y_arr)
-        img = f'Images/gx.png'
+        img = f'{mu2mech_dir}/Images/gx.png'
         plt.xlim([0, 1])
         plt.xlabel(f"Mole fraction of {elem}", fontsize=12)
         plt.ylabel("Gibbs energy (KJ/mole)", fontsize=12)
@@ -1089,7 +1078,7 @@ class ParamCH3DAlloy(Ui_DialogParamCH3DAlloy, QDialog):
         self.setWindowFlags(self.windowFlags() & ~
                             Qt.WindowCloseButtonHint | Qt.CustomizeWindowHint)
 
-        files_list = os.listdir("TC_Data/Coff/")
+        files_list = os.listdir(f"{mu2mech_dir}/TC_Data/Coff/")
         variables.alloys = []
         
         # Replace the '.csv' extension with an empty string
@@ -1116,7 +1105,7 @@ class ParamCH3DAlloy(Ui_DialogParamCH3DAlloy, QDialog):
         self.dialogPhaseDiagarm.setFixedSize(800, 800)
         self.dialogPhaseDiagarm.setWindowTitle(QCoreApplication.translate(
             "DialogPhaseDiagram", f'{self.comboBoxAlloy.currentText()} Phase Diagram', None))
-        self.img_path = f'TC_Data/Phase_Diagram/{self.comboBoxAlloy.currentText()}.png'
+        self.img_path = f'{mu2mech_dir}/TC_Data/Phase_Diagram/{self.comboBoxAlloy.currentText()}.png'
         pixmap = QPixmap(self.img_path)
         width = 800
         height = 800
@@ -1128,7 +1117,7 @@ class ParamCH3DAlloy(Ui_DialogParamCH3DAlloy, QDialog):
 
     def load_temperature_data(self):
         try:
-            file_path = f'TC_Data/Coff/{self.comboBoxAlloy.currentText()}.csv'
+            file_path = f'{mu2mech_dir}/TC_Data/Coff/{self.comboBoxAlloy.currentText()}.csv'
         except:
             print("File does not exist")
         loaded_data = np.genfromtxt(file_path, delimiter=',')
@@ -1157,15 +1146,15 @@ class ParamCH3DAlloy(Ui_DialogParamCH3DAlloy, QDialog):
             
     def save_pram_ch3d(self):
         variables.data = utils.lineedit_string_to_data(self, variables.data)
-        variables.data['coff']['aa'] = str(self.coff_data[self.comboBoxTemperature.currentText(
+        variables.data['cof']['aa'] = str(self.coff_data[self.comboBoxTemperature.currentText(
         )]['aa'])
-        variables.data['coff']['bb'] = str(self.coff_data[self.comboBoxTemperature.currentText(
+        variables.data['cof']['bb'] = str(self.coff_data[self.comboBoxTemperature.currentText(
         )]['bb'])
-        variables.data['coff']['cc'] = str(self.coff_data[self.comboBoxTemperature.currentText(
+        variables.data['cof']['cc'] = str(self.coff_data[self.comboBoxTemperature.currentText(
         )]['cc'])
-        variables.data['coff']['dd'] = str(self.coff_data[self.comboBoxTemperature.currentText(
+        variables.data['cof']['dd'] = str(self.coff_data[self.comboBoxTemperature.currentText(
         )]['dd'])
-        variables.data['coff']['ee'] = str(self.coff_data[self.comboBoxTemperature.currentText(
+        variables.data['cof']['ee'] = str(self.coff_data[self.comboBoxTemperature.currentText(
         )]['ee'])
         # print(variables.data)
         self.close()
@@ -1179,13 +1168,13 @@ class PostProcessing2D(Ui_DialogPostProcessing2D, QDialog):
         utils.delete_files("PostProcessing/Plots/*.png")
 
         # Set icons
-        self.pushButtonBrowseSavePlot.setIcon(QIcon('Images/Icons/folder.png'))
+        self.pushButtonBrowseSavePlot.setIcon(QIcon(f'{mu2mech_dir}/Images/Icons/folder.png'))
         self.pushButtonBrowseSaveAllPlots.setIcon(
-            QIcon('Images/Icons/folder.png'))
+            QIcon(f'{mu2mech_dir}/Images/Icons/folder.png'))
         self.pushButtonBrowseExportAnimation.setIcon(
-            QIcon('Images/Icons/folder.png'))
+            QIcon(f'{mu2mech_dir}/Images/Icons/folder.png'))
         self.pushButtonGetMousePosition.setIcon(
-            QIcon('Images/Icons/mouse.png'))
+            QIcon(f'{mu2mech_dir}/Images/Icons/mouse.png'))
 
         self.horizontalSliderTime.valueChanged.connect(self.slider_moved)
         self.pushButtonGetMousePosition.clicked.connect(self.get_mouse_pos)
@@ -1205,8 +1194,8 @@ class PostProcessing2D(Ui_DialogPostProcessing2D, QDialog):
 
         self.pushButtonLeft.clicked.connect(self.plot_left)
         self.pushButtonRight.clicked.connect(self.plot_right)
-        self.pushButtonLeft.setIcon(QIcon('Images/Icons/left_arrow.png'))
-        self.pushButtonRight.setIcon(QIcon('Images/Icons/right_arrow.png'))
+        self.pushButtonLeft.setIcon(QIcon(f'{mu2mech_dir}/Images/Icons/left_arrow.png'))
+        self.pushButtonRight.setIcon(QIcon(f'{mu2mech_dir}/Images/Icons/right_arrow.png'))
 
         # Width of plotting area in main window in pixels
         self.width_x = 442
@@ -1389,7 +1378,7 @@ class OOF2Calculation(Ui_DialogOOF2Calculation, QDialog):
         self.pushButtonBrowseOutDir.clicked.connect(self.save_path)
         self.pushButtonPredict.clicked.connect(self.predict)
         self.pushButtonGetMousePosition.setIcon(
-            QIcon('Images/Icons/mouse.png'))
+            QIcon(f'{mu2mech_dir}/Images/Icons/mouse.png'))
         self.actor_mesh = None
         self.calc_process = None
         
@@ -1422,7 +1411,7 @@ class OOF2Calculation(Ui_DialogOOF2Calculation, QDialog):
     def oof2_parameters(self):
         os.mkdir(self.output_path)
         self.convert_to_image()
-        self.script_path = f"{os.getcwd()}/OOF2/temp_scripts/script"
+        self.script_path = f"{os.getcwd()}/OOF2_temp_script/script"
         variables.oof2_param['image_path'] = self.image_path
         variables.oof2_param['image_name'] = self.image_path.split('/')[-1]
         variables.oof2_param['output_path'] = self.output_path
@@ -1439,10 +1428,6 @@ class OOF2Calculation(Ui_DialogOOF2Calculation, QDialog):
         variables.oof2_param['mesh']['element_type'] = self.comboBoxElementType.currentText()
         variables.oof2_param['boundary_conditions']['bc1']['value'] = self.lineEditBC1Value.text()
         variables.oof2_param['boundary_conditions']['bc2']['value'] = self.lineEditBC2Value.text()
-        
-        print(variables.oof2_param)
-        
-      
 
     def save_path(self):
         self.output_path, _ = QFileDialog.getSaveFileName(
@@ -1461,12 +1446,22 @@ class OOF2Calculation(Ui_DialogOOF2Calculation, QDialog):
         self.labelStatus.setStyleSheet('color: black')
 
     def run_script(self, completed_fn_str):
-        calc_command = f"oof2 --image {self.image_path} --script {os.getcwd()}/OOF2/temp_scripts/script"
-        if(self.calc_process == None):
-            self.calc_process = QProcess()
-            self.calc_process.start(calc_command)
-            self.calc_process.finished.connect(eval(completed_fn_str))
-
+        try:
+            calc_command = f"oof2 --image {self.image_path} --script {os.getcwd()}/OOF2_temp_script/script"
+            
+            # Check if calc_process is None
+            if self.calc_process is None:
+                self.calc_process = QProcess()
+                
+                # Attempt to start the process
+                self.calc_process.start(calc_command)
+                
+                # Connect the finished signal to the callback function
+                self.calc_process.finished.connect(eval(completed_fn_str))
+        
+        except Exception as e:
+            # Handle and log the error
+            print(f"An error occurred while running the script: {e}")
 
     # Read values from output of OOF2
     def read_strain(self, file_path):
@@ -1476,7 +1471,7 @@ class OOF2Calculation(Ui_DialogOOF2Calculation, QDialog):
         return float(lines[-1].split(',')[-1])
 
     def step1_completed(self):
-        print("step1 completed")
+        print("OOF2 step1 completed")
         self.calc_process = None
         self.step1_postprocessing()
         oof2_script.step2(variables.oof2_param)
@@ -1497,6 +1492,7 @@ class OOF2Calculation(Ui_DialogOOF2Calculation, QDialog):
         self.run_script("self.step1_completed")
 
     def step2_completed(self):
+        print("OOF2 step1 completed")
         self.calc_process == None
         self.labelStatus.setText("Completed")
         self.labelStatus.setStyleSheet('color: green')
@@ -1558,8 +1554,8 @@ class Particles2D(Ui_DialogParticles, QDialog):
         input_arr.append(f"lx {variables.data['parameters']['lx']}")
         input_arr.append(f"ly {variables.data['parameters']['ly']}")
         input_arr.append(f"time {variables.current_time}")
-        input_file = open("Sources/input.dat", "w")
-        self.source_binary = "./Sources/hkl_2d.o"
+        input_file = open("input.dat", "w")
+        self.source_binary = f"{mu2mech_dir}/Sources/hkl_2d.o"
         for row in input_arr:
             input_file.write(row+"\n")
         input_file.close()
@@ -1606,8 +1602,8 @@ class Particles3D(Ui_DialogParticles, QDialog):
         input_arr.append(f"ly {variables.data['parameters']['ly']}")
         input_arr.append(f"lz {variables.data['parameters']['lz']}")
         input_arr.append(f"time {variables.current_time}")
-        input_file = open("Sources/input.dat", "w")
-        self.source_binary = "./Sources/hkl_3d.o"
+        input_file = open("input.dat", "w")
+        self.source_binary = f"{mu2mech_dir}/Sources/hkl_3d.o"
         for row in input_arr:
             input_file.write(row+"\n")
         input_file.close()
@@ -1634,13 +1630,9 @@ class Particles3D(Ui_DialogParticles, QDialog):
             f'3D Particles at time {variables.current_time:.2f}')
         self.labelParticlesTop.setText("No.\tVolume\tSize")
         s = ''
-        # print(p_vol_data.shape)
         if(p_vol_data.shape == (4,)):
-            # print("test")
             p_vol_data = p_vol_data.reshape((1, 4))
-        # print(p_vol_data.shape)
         for data in p_vol_data:
-            # print(data)
             s += f'{data[0]:.0f}\t{data[2]:.2f}\t{data[3]:.2f}\n'
         self.labelParticles.setText(s)
 
@@ -1860,7 +1852,7 @@ class ExportAnimation(Ui_DialogConvertToVideo, QDialog):
         self.pushButtonExport.clicked.connect(self.convert_to_video)
         self.comboBoxVideoFormat.currentIndexChanged.connect(
             self.reset_file_path)
-        self.pushButtonBrowse.setIcon(QIcon('Images/Icons/folder.png'))
+        self.pushButtonBrowse.setIcon(QIcon(f'{mu2mech_dir}/Images/Icons/folder.png'))
 
         self.time_arr = utils.get_time_list('Output/Data', '.dat')
 
@@ -1914,21 +1906,8 @@ class ExportAnimation(Ui_DialogConvertToVideo, QDialog):
 
 
 app = QApplication([])
-
-# Create a splash screen and set the background image
-splash = QSplashScreen()
-pixmap = QPixmap("Images/100.png")
-splash.setPixmap(pixmap)
-
-# Set a message that will be displayed below the background image
-splash.showMessage("Loading...", alignment=Qt.AlignBottom |
-                   Qt.AlignCenter, color=QColor("white"))
-
-# Show the splash screen
-splash.show()
-
 window = Ui_PhaseField()
-icon = QIcon("Images/app_icon.png")
+icon = QIcon(f"{mu2mech_dir}/Images/app_icon.png")
 window.setWindowIcon(icon)
 window.show()
 app.exec_()

@@ -1,4 +1,7 @@
+import os 
+
 def step1(data):
+    os.makedirs("OOF2_temp_script", exist_ok=True)
     oof2_script_str = f"""OOF.Windows.Graphics.New()
 OOF.Graphics_1.Settings.New_Layer_Policy(policy='Single')
 OOF.Microstructure.Create_From_ImageFile(filename='{data['output_path']}/{data['image_name']}', microstructure_name='{data['image_name']}', height=automatic, width=automatic)
@@ -70,7 +73,7 @@ OOF.Mesh.Apply_Field_Initializers(mesh='{data['image_name']}:skeleton:mesh')
 OOF.Mesh.Solve(mesh='{data['image_name']}:skeleton:mesh', endtime=0.0) 
 exit()"""
 
-    f = open("OOF2/temp_scripts/script", "w")
+    f = open("OOF2_temp_script/script", "w")
     f.write(oof2_script_str)
     f.close()
 
@@ -149,6 +152,6 @@ OOF.Mesh.Apply_Field_Initializers(mesh='{data['image_name']}:skeleton:mesh')
 OOF.Mesh.Solve(mesh='{data['image_name']}:skeleton:mesh', endtime=0.0) 
 exit()"""
 
-    f = open(f"OOF2/temp_scripts/script", "w")
+    f = open(f"OOF2_temp_script/script", "w")
     f.write(oof2_script_str)
     f.close()
