@@ -77,6 +77,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
 
         # List of directories to create
         directories = [
+            "Images/",
             "Output/PostData/",
             "Output/Data/",
             "Output/Img/",
@@ -1003,7 +1004,7 @@ class ViewCalcParam(Ui_DialogViewCalcParam, QDialog):
         fig = plt.figure(figsize=(4, 5), dpi=300)
         ax = fig.add_subplot()
         plt.plot(x_arr, y_arr)
-        img = f'{mu2mech_dir}/Images/gx.png'
+        img = f'Images/gx.png'
         plt.xlim([0, 1])
         plt.xlabel(f"Mole fraction of {elem}", fontsize=12)
         plt.ylabel("Gibbs energy (KJ/mole)", fontsize=12)
