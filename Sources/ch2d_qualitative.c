@@ -1,235 +1,189 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <complex.h>
-#include <fftw3.h>
-#include <time.h>
-#include <string.h>
-#include <math.h>
-#include <time.h>
+/*
+ * ch2d_qualitative.c — 2-D Cahn-Hilliard solver with a qualitative double-well
+ * free energy.
+ *
+ * Free energy density:  f(c) = c²(1-c)²
+ *   => df/dc = 2c(1-c)(2c-1)
+ *            = -2c(1 + 2c² - 3c)       (form used below)
+ *
+ * Time integration: semi-implicit spectral (Eyre splitting):
+ *   ĉ(t+Δt) = [ ĉ(t) + Δt · k² · ĝ(t) ]
+ *             / [ 1 + Δt · κ · k⁴ ]
+ *
+ * where κ = 1 (gradient energy coefficient) and mobility M = 1.
+ *
+ * Input file (input.dat) — one key-value pair per line:
+ *   fluctuation  <value>   initial composition noise amplitude
+ *   cAvg         <value>   mean composition
+ *   lx           <int>     grid points in x
+ *   ly           <int>     grid points in y
+ *   mobility     <value>   (read but not used; kept for format compatibility)
+ *   kappa        <value>   (read but not used; kept for format compatibility)
+ *   delT         <value>   time step Δt
+ *   delX         <value>   grid spacing in x
+ *   delY         <value>   grid spacing in y
+ *   timeInterval <value>   output interval
+ *   totalTime    <value>   end time
+ *   resume       <0|1>     0 = fresh start, 1 = resume
+ *   resumeFrom   <value>   time to resume from (as a string to match filename)
+ */
 
-#define pi 3.14159265
+#include "ch_common.h"
 
-     /* Evolution of microstructure of composition in spinoidal range */
+/* ── Input parameters ─────────────────────────────────────────────────────── */
+typedef struct {
+    double fluctuation;   /* amplitude of initial random noise         */
+    double c_avg;         /* mean composition                          */
+    int    grid_x;        /* grid points in x                          */
+    int    grid_y;        /* grid points in y                          */
+    double mobility;      /* read for format compat. (unused here)     */
+    double kappa;         /* gradient energy coefficient (unused here) */
+    double dt;            /* time step                                 */
+    double dx;            /* grid spacing in x                         */
+    double dy;            /* grid spacing in y                         */
+    double save_interval; /* output interval                           */
+    double total_time;    /* total simulation time                     */
+    int    resume;        /* 0 = fresh start, 1 = resume               */
+    char   resume_from_str[32]; /* resume time as string (for filename) */
+    double resume_from;   /* resume time as double                     */
+} SimParams;
 
-int main()
+/* ── Read input.dat ───────────────────────────────────────────────────────── */
+static void read_params(SimParams *p)
 {
-    /* Data initialization */
+    /* kv_load parses the whole file; each parameter is looked up by name so
+     * the order of lines in input.dat does not matter. */
+    KVDoc doc         = kv_load("input.dat");
+    p->fluctuation    = kv_get_double(&doc, "fluctuation");
+    p->c_avg          = kv_get_double(&doc, "cAvg");
+    p->grid_x         = kv_get_int   (&doc, "lx");
+    p->grid_y         = kv_get_int   (&doc, "ly");
+    p->mobility       = kv_get_double(&doc, "mobility");
+    p->kappa          = kv_get_double(&doc, "kappa");
+    p->dt             = kv_get_double(&doc, "delT");
+    p->dx             = kv_get_double(&doc, "delX");
+    p->dy             = kv_get_double(&doc, "delY");
+    p->save_interval  = kv_get_double(&doc, "timeInterval");
+    p->total_time     = kv_get_double(&doc, "totalTime");
+    p->resume         = kv_get_int   (&doc, "resume");
+    kv_get_string(&doc, "resumeFrom", p->resume_from_str, sizeof(p->resume_from_str));
+    sscanf(p->resume_from_str, "%lf", &p->resume_from);
+}
 
-    int    lx, ly, M, k, x, y, n, N, i, j, resume, total_time_steps;
-    double delt, delkx, delky, halflx, halfly, kfx, kfy, kfx2, kfy2, k2, k4, delx, dely, c_avg;
-    char   junk[100];
-    char   resume_from_str[10];
-    double resume_from;
-    double time, time_interval, total_time;
-    double fluctuation;
+/* ── Free energy derivative  df/dc = -2c(1 + 2c² - 3c) ─────────────────── */
+static inline double free_energy_deriv(double c)
+{
+    return -2.0 * c * (1.0 + 2.0 * c * c - 3.0 * c);
+}
 
-    /* Creating a file and Getting data from input file */
+/* ── Main ─────────────────────────────────────────────────────────────────── */
+int main(void)
+{
+    SimParams p;
+    read_params(&p);
 
-    FILE *fp;
-    fp = fopen("input.dat", "r"); 
+    int lx = p.grid_x;
+    int ly = p.grid_y;
+    int n_total = lx * ly;
 
-    if (fp == NULL)
-    {
-        printf("Cannot open file");
-    }
-    fscanf(fp, "\
-   %s%lf\
-   %s%lf\
-   %s%d\
-   %s%d\
-   %s%d\
-   %s%d\
-   %s%lf\
-   %s%lf\
-   %s%lf\
-   %s%lf\
-   %s%lf\
-   %s%d\
-   %s%s",
-           junk, &fluctuation,
-           junk, &c_avg,
-           junk, &lx,
-           junk, &ly,
-           junk, &M,
-           junk, &k,
-           junk, &delt,
-           junk, &delx,
-           junk, &dely,
-           junk, &time_interval,
-           junk, &total_time,
-           junk, &resume,
-           junk, &resume_from_str);
+    /* Allocate fields in Fourier-space representation */
+    fftw_complex *composition       = fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *composition_hat   = fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *chem_potential    = fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *chem_potential_hat= fftw_malloc(sizeof(fftw_complex) * n_total);
 
-    fclose(fp);
-
-    sscanf(resume_from_str, "%lf", &resume_from);
-
-    /* Defining variables in fourier space */
-
-    fftw_complex *c, *ctilda, *g, *gtilda;
-
-    c      = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-    ctilda = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-    g      = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-    gtilda = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-
-    /* Defining FFT Plans */
-
-    fftw_plan p, q, s;
-
-    p = fftw_plan_dft_2d(lx, ly, c, ctilda, FFTW_FORWARD, FFTW_ESTIMATE);
-    q = fftw_plan_dft_2d(lx, ly, g, gtilda, FFTW_FORWARD, FFTW_ESTIMATE);
-    s = fftw_plan_dft_2d(lx, ly, ctilda, c, FFTW_BACKWARD, FFTW_ESTIMATE);
-
-    // resume = 0 - Start calculation from the beginning
-    // resume = 1 - Resume calculation
-
-    if (resume == 0)
-    {
-        /* Defining initial composition */
-        /* Providing noise from -0.001 to +0.001*/
-
-        for (x = 0; x < lx; ++x)
-        {
-            for (y = 0; y < ly; ++y)
-            {
-                c[y + ly * x] = c_avg + (-1 + 2 * ((double)rand() / (double)RAND_MAX)) * (fluctuation * 10);
-            }
-        }
+    if (!composition || !composition_hat || !chem_potential || !chem_potential_hat) {
+        fprintf(stderr, "ERROR: FFTW allocation failed\n");
+        return EXIT_FAILURE;
     }
 
-    else
-    {
-        // Loading initial composition
+    /* FFT plans:
+     *   plan_fwd_c  : composition   → composition_hat   (forward)
+     *   plan_fwd_mu : chem_potential → chem_potential_hat (forward)
+     *   plan_bwd    : composition_hat → composition      (backward / IFFT)
+     */
+    fftw_plan plan_fwd_c   = fftw_plan_dft_2d(lx, ly, composition,    composition_hat,    FFTW_FORWARD,  FFTW_ESTIMATE);
+    fftw_plan plan_fwd_mu  = fftw_plan_dft_2d(lx, ly, chem_potential,  chem_potential_hat, FFTW_FORWARD,  FFTW_ESTIMATE);
+    fftw_plan plan_bwd     = fftw_plan_dft_2d(lx, ly, composition_hat, composition,        FFTW_BACKWARD, FFTW_ESTIMATE);
 
-        FILE *fp;
-        char fName[30];
-        strcat(fName, "Output/Data/output_");
-        strcat(fName, resume_from_str);
-        strcat(fName, ".dat");
-        fp = fopen(fName, "r");
-        if (fp == NULL)
-        {
-            printf("Cannot open file");
-        }
-        for (x = 0; x < lx; ++x)
-        {
-            for (y = 0; y < ly; ++y)
-            {
-
-                fscanf(fp, "%lf", &c[y + ly * x]);
-            }
-            fscanf(fp, "%lf", &c[y + ly * x]);
-        }
+    /* Initialise composition field */
+    if (p.resume == 0) {
+        /* Fresh start: uniform c_avg plus small random fluctuation */
+        for (int i = 0; i < lx; i++)
+            for (int j = 0; j < ly; j++)
+                composition[IDX2(i, j, ly)] =
+                    p.c_avg + (-1.0 + 2.0 * ((double)rand() / (double)RAND_MAX))
+                              * (p.fluctuation * 10.0);
+    } else {
+        /* Resume: load previously saved field */
+        char resume_path[80];
+        snprintf(resume_path, sizeof(resume_path),
+                 "Output/Data/output_%s.dat", p.resume_from_str);
+        load_field_2d(composition, lx, ly, resume_path);
     }
 
-    delkx = 2.0 * pi / (lx * delx);
-    delky = 2.0 * pi / (ly * dely);
+    /* ── Time integration ─────────────────────────────────────────────────── */
+    int step_start = (int)round(p.resume_from / p.dt);
+    int step_end   = (int)round(p.total_time  / p.dt);
 
-    halflx = (int)lx / 2.0;
-    halfly = (int)ly / 2.0;
+    for (int step = step_start; step <= step_end; step++) {
+        double time = step * p.dt;
 
-    /* Running the code for given time */
+        /* Save field at requested output interval */
+        if (should_save(step, p.dt, p.save_interval))
+            save_field_2d(composition, lx, ly, time);
 
-    total_time_steps = ((total_time) / delt);
-    n = ((resume_from) / delt);
+        /* Compute df/dc at every grid point */
+        for (int i = 0; i < lx; i++)
+            for (int j = 0; j < ly; j++)
+                chem_potential[IDX2(i, j, ly)] =
+                    free_energy_deriv(creal(composition[IDX2(i, j, ly)]));
 
-    for (; n <= total_time_steps; ++n)
-    {
+        /* Forward FFT of composition and chemical potential */
+        fftw_execute(plan_fwd_mu);
+        fftw_execute(plan_fwd_c);
 
-    /* Saving data to files */       
+        /*
+         * Semi-implicit spectral update in Fourier space:
+         *   ĉ(t+Δt) = [ ĉ(t) + Δt·k²·μ̂(t) ] / [ 1 + Δt·k⁴ ]
+         *
+         * The k⁴ term in the denominator is the linearised stabiliser from
+         * the gradient energy κ∇²c contribution (κ=1 here).
+         */
+        for (int i = 0; i < lx; i++) {
+            double kx  = kfreq(i, lx, p.dx);
+            double kx2 = kx * kx;
+            for (int j = 0; j < ly; j++) {
+                double ky  = kfreq(j, ly, p.dy);
+                double ky2 = ky * ky;
+                double k2  = kx2 + ky2;
+                double k4  = k2 * k2;
+                int    idx = IDX2(i, j, ly);
 
-        time = n * delt;
-        if (fmod(time, time_interval) == 0)
-        {
-            char file_name[25];
-            sprintf(file_name, "Output/Data/output_%.2f.dat", time);
-            FILE *fptr;
-            fptr = fopen(file_name, "w");
-
-            for (x = 0; x < lx; ++x)
-            {
-                for (y = 0; y < ly; ++y)
-                {
-                    fprintf(fptr, "%f ", creal(c[y + ly * x]));
-                }
-                fprintf(fptr, "%f\n", creal(c[y + ly * x]));
-            }
-            fclose(fptr);
-            // printf("output_%.2f.dat\n", time);
-        }
-
-        /* Defining free energy */
-
-        for (x = 0; x < lx; ++x)
-        {
-            for (y = 0; y < ly; ++y)
-            {
-
-                g[y + ly * x] = -2 * (c[y + ly * x]) * (1 + 2 * (c[y + ly * x]) * (c[y + ly * x]) - 3 * (c[y + ly * x]));
+                composition_hat[idx] =
+                    (composition_hat[idx] + p.dt * k2 * chem_potential_hat[idx])
+                    / (1.0 + p.dt * k4);
             }
         }
 
-        /* FFT of composition and  free energy */
+        /* Inverse FFT back to real space */
+        fftw_execute(plan_bwd);
 
-        fftw_execute(q);
-        fftw_execute(p);
-
-        for (i = 0; i < lx; ++i)
-        {
-            if (i < halflx)
-            {
-                kfx = i * delkx;
-            }
-
-            else
-            {
-                kfx = (i - lx) * delkx;
-            }
-            kfx2 = kfx * kfx;
-
-            for (j = 0; j < ly; ++j)
-            {
-                if (j < halfly)
-                {
-                    kfy = j * delky;
-                }
-
-                else
-                {
-                    kfy = (j - ly) * delky;
-                }
-
-                kfy2 = kfy * kfy;
-                k2 = kfx2 + kfy2;
-                k4 = k2 * k2;
-
-                ctilda[j + ly * i] = 1. * (ctilda[j + ly * i] + delt * k2 * gtilda[j + ly * i]) / (1.0 + delt * k4); 
-            }
-        }
-
-        /* IFFT of final composition */
-
-        fftw_execute(s);
-
-        /* Normalization of composition */
-
-        for (x = 0; x < lx; ++x)
-        {
-            for (y = 0; y < ly; ++y)
-            {
-                c[y + ly * x] = 1. * c[y + ly * x] / (lx * ly); 
-            }
-        }
+        /* Normalise (FFTW does not normalise the inverse transform) */
+        double norm = 1.0 / (double)n_total;
+        for (int i = 0; i < n_total; i++)
+            composition[i] *= norm;
     }
 
-    fftw_free(c);
-    fftw_free(g);
-
-    fftw_destroy_plan(p);
-    fftw_destroy_plan(q);
-    fftw_destroy_plan(s);
-
+    /* ── Cleanup ──────────────────────────────────────────────────────────── */
+    fftw_destroy_plan(plan_fwd_c);
+    fftw_destroy_plan(plan_fwd_mu);
+    fftw_destroy_plan(plan_bwd);
+    fftw_free(composition);
+    fftw_free(composition_hat);
+    fftw_free(chem_potential);
+    fftw_free(chem_potential_hat);
     fftw_cleanup();
-    return 0;
+
+    return EXIT_SUCCESS;
 }

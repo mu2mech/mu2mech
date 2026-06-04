@@ -1,0 +1,18 @@
+# Windows Makefile for mu2mech C sources (MinGW-w64)
+# Requires: fftw3 DLLs in C:\fftw3\  (see build_windows.bat for download instructions)
+
+CC       = gcc
+FFTW_DIR = C:/fftw3
+CFLAGS   = -I$(FFTW_DIR) -L$(FFTW_DIR) -lfftw3-3 -lm
+CPPFLAGS = -fPIC -w
+
+output_objects = ch2d_alloy.exe ch3d_alloy.exe ch2d_qualitative.exe hkl_2d.exe hkl_3d.exe
+
+all: $(output_objects)
+
+$(output_objects): %.exe: %.c
+	$(CC) $< -o $@ $(CFLAGS) $(CPPFLAGS)
+	copy "$(FFTW_DIR)\libfftw3-3.dll" .
+
+clean:
+	del /f /q *.exe

@@ -1,0 +1,20 @@
+# Compiled C binaries
+Sources/*.o
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Simulation runtime files
+input.dat
+Output/
+
+# PyInstaller artefacts
+dist/
+build/
+*.spec.bak
+
+# OS / editor
+.DS_Store
+*.swp

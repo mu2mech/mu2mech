@@ -1,704 +1,356 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <complex.h>
-#include <fftw3.h>
-#include <time.h>
-#include <math.h>
-#include <stdlib.h>
+/*
+ * ch2d_alloy.c — 2-D Cahn-Hilliard solver for a binary alloy with
+ * thermodynamic Gibbs free energy from CALPHAD coefficients.
+ *
+ * Free energy density (non-dimensionalised):
+ *   g(c) = Ag * (aa·c⁴ + bb·c³ + cc·c² + dd·c + ee)
+ *   μ(c) = dg/dc = Ag * (4aa·c³ + 3bb·c² + 2cc·c + dd)
+ *
+ * Mobility:  M(c) = c(1-c)   (degenerate, vanishes at pure phases)
+ *
+ * Time integration: semi-implicit spectral with degenerate mobility
+ * (Zhu–Chen–Shen scheme):
+ *
+ *   flux_x̂(t+Δt) = ik_x [ μ̂(t) + κ·k²·ĉ(t) ]     (Fourier of  M·∂μ̂/∂x )
+ *   ĉ(t+Δt) = [ (1 + 0.5Δt·k⁴)·ĉ(t)
+ *               + Δt·i(k_x·f̂₂ₓ + k_y·f̂₂ᵧ) ]
+ *             / (1 + 0.5Δt·k⁴)
+ *
+ * where f₂ = M(c)·(IFFT of ik·[μ̂ + κk²ĉ]) and gradient energy κ = Hg.
+ *
+ * Spinodal points pp1, pp2 are the inflection points of g(c):
+ *   pp₁,₂ = (-6bb ± √(36bb²-96aa·cc)) / 24aa
+ *
+ * Regions:
+ *   c_avg outside [pp2, pp1]  →  metastable/stable  (nucleation)
+ *   c_avg inside  [pp2, pp1]  →  unstable            (spinodal decomposition)
+ *
+ * Input file (input.dat):
+ *   aa … ee       Gibbs polynomial coefficients
+ *   Ag            energy scale
+ *   Hg            barrier height (gradient energy coefficient)
+ *   fluctuation   noise amplitude
+ *   cAvg          mean composition
+ *   lx, ly        grid dimensions
+ *   delT          time step
+ *   delX, delY    grid spacings
+ *   timeInterval  output interval
+ *   totalTime     end time
+ *   resume        0 = fresh, 1 = resume
+ *   resumeFrom    resume time (as string matching filename)
+ */
+
+#include "ch_common.h"
 #include "nrutil.c"
 #include "gasdev.c"
-#define pi 3.14159265
 
-/* Evolution of microstructure of composition in spinoidal range */
-/* Order of fluctuation or noise added */
-/* Flag is added */
+/* ── Input parameters ─────────────────────────────────────────────────────── */
+typedef struct {
+    double aa, bb, cc, dd, ee;  /* Gibbs polynomial coefficients          */
+    double Ag;                   /* energy scale                           */
+    double Hg;                   /* barrier height / gradient coefficient  */
+    double fluctuation;          /* noise amplitude                        */
+    double c_avg;                /* mean composition                       */
+    int    grid_x, grid_y;       /* grid dimensions                        */
+    double dt;                   /* time step                              */
+    double dx, dy;               /* grid spacings                          */
+    double save_interval;        /* output interval                        */
+    double total_time;           /* end time                               */
+    int    resume;               /* 0 = fresh, 1 = resume                 */
+    char   resume_from_str[32];  /* resume time as string                 */
+    double resume_from;          /* resume time as double                 */
+} AlloySim2D;
 
-int main()
+static void read_params(AlloySim2D *p)
 {
+    KVDoc doc         = kv_load("input.dat");
+    p->aa             = kv_get_double(&doc, "aa");
+    p->bb             = kv_get_double(&doc, "bb");
+    p->cc             = kv_get_double(&doc, "cc");
+    p->dd             = kv_get_double(&doc, "dd");
+    p->ee             = kv_get_double(&doc, "ee");
+    p->Ag             = kv_get_double(&doc, "Ag");
+    p->Hg             = kv_get_double(&doc, "Hg");
+    p->fluctuation    = kv_get_double(&doc, "fluctuation");
+    p->c_avg          = kv_get_double(&doc, "cAvg");
+    p->grid_x         = kv_get_int   (&doc, "lx");
+    p->grid_y         = kv_get_int   (&doc, "ly");
+    p->dt             = kv_get_double(&doc, "delT");
+    p->dx             = kv_get_double(&doc, "delX");
+    p->dy             = kv_get_double(&doc, "delY");
+    p->save_interval  = kv_get_double(&doc, "timeInterval");
+    p->total_time     = kv_get_double(&doc, "totalTime");
+    p->resume         = kv_get_int   (&doc, "resume");
+    kv_get_string(&doc, "resumeFrom", p->resume_from_str, sizeof(p->resume_from_str));
+    sscanf(p->resume_from_str, "%lf", &p->resume_from);
+}
 
-   /* Data initialization */
-   int lx, ly, M, k, x, y, n, N, i, j, ij, m, total_time_time_interval;
-   double delt, total_time, delkx, delky, halflx, halfly, kfx, kfy, kfx2, kfy2, k2, k4, delx, dely, c_avg, fluctuation;
-   char junk[100];
+/*
+ * Non-dimensionalised chemical potential  dg/dc, scaled by Ag/Hg.
+ * Hg (barrier height) acts as an energy normalisation so the time step
+ * Δt and grid spacing remain stable for typical alloy coefficients.
+ */
+static inline double chem_potential(const AlloySim2D *p, double c)
+{
+    return (p->Ag / p->Hg) * (4.0*p->aa*c*c*c + 3.0*p->bb*c*c + 2.0*p->cc*c + p->dd);
+}
 
-   char NAME[50];
-   double time_interval = 100; // time_interval after which composition need to be printed//
-   double time;
-   int resume;
-   char resume_from_str[10];
-   double resume_from;
+/* ── Degenerate mobility  M(c) = c(1-c) ──────────────────────────────────── */
+static inline double mobility(double c) { return c * (1.0 - c); }
 
-   double aa, bb, cc, dd, ee, pp1, pp2, Ag, Hg; /* G = a*C^4 + b*C^3 + c*C^2 + d*C + e ,p1 and p2 are spinodal points*/
+/*
+ * Add zero-mean Gaussian thermal noise to the composition field.
+ * Four independent noise arrays are generated, scaled, mean-subtracted, and
+ * added — this was the approach in the original code and is preserved.
+ *
+ * 'seeds' must point to an array of 4 long ints that persist between calls
+ * so the RNG state evolves across time steps.
+ */
+static void add_thermal_noise(fftw_complex *composition,
+                              int lx, int ly,
+                              double noise_scale,
+                              long seeds[4])
+{
+    float gasdev(long *idum);
+    double **noise = dmatrix(0, lx, 0, ly);
+    double rsum, rmean;
 
-   /* Creating a file and Getting data from input file */
-   FILE *fptr;
-   FILE *fptr8;
-   FILE *fp;
-   fp = fopen("input.dat", "r");
-   if (fp == NULL)
-   {
-      printf("Cannot open file");
-   }
-   fscanf(fp, "\
-   %s%lf\
-   %s%lf\
-   %s%lf\
-   %s%lf\
-   %s%lf\
-   %s%lf\
-   %s%lf\
-   %s%lf\
-   %s%lf\
-   %s%d\
-   %s%d\
-   %s%lf\
-   %s%lf\
-   %s%lf\
-   %s%lf\
-   %s%lf\
-   %s%d\
-   %s%s",
-          junk, &aa,
-          junk, &bb,
-          junk, &cc,
-          junk, &dd,
-          junk, &ee,
-          junk, &Ag,
-          junk, &Hg,
-          junk, &fluctuation,
-          junk, &c_avg,
-          junk, &lx,
-          junk, &ly,
-          junk, &delt,
-          junk, &delx,
-          junk, &dely,
-          junk, &time_interval,
-          junk, &total_time,
-          junk, &resume,
-          junk, &resume_from_str);
-
-
-   fftw_complex *c, *ctilda, *g, *gtilda, *M1, *f1x, *f1y, *f1tildax, *f1tilday, *f2x, *f2y, *f2tildax, *f2tilday;
-   fftw_plan p, q, q1x, q2x, q1y, q2y, s;
-
-   c = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   ctilda = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   g = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   gtilda = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   M1 = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   f1x = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   f1tildax = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   f2x = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   f2tildax = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   f1y = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   f1tilday = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   f2y = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-   f2tilday = fftw_malloc(sizeof(fftw_complex) * lx * ly);
-
-   p = fftw_plan_dft_2d(lx, ly, c, ctilda, FFTW_FORWARD, FFTW_ESTIMATE);
-   q = fftw_plan_dft_2d(lx, ly, g, gtilda, FFTW_FORWARD, FFTW_ESTIMATE);
-   s = fftw_plan_dft_2d(lx, ly, ctilda, c, FFTW_BACKWARD, FFTW_ESTIMATE);
-   q1x = fftw_plan_dft_2d(lx, ly, f2x, f2tildax, FFTW_FORWARD, FFTW_ESTIMATE);
-   q2x = fftw_plan_dft_2d(lx, ly, f1tildax, f1x, FFTW_BACKWARD, FFTW_ESTIMATE);
-   q1y = fftw_plan_dft_2d(lx, ly, f2y, f2tilday, FFTW_FORWARD, FFTW_ESTIMATE);
-   q2y = fftw_plan_dft_2d(lx, ly, f1tilday, f1y, FFTW_BACKWARD, FFTW_ESTIMATE);
-
-   /* Defining initial composition */
-
-   double **random_numA, **random_numB, **random_numC, **random_numD;
-   float gasdev(long *idum);
-   double rsum1, rmean1, rsum2, rmean2, rsum3, rmean3, rsum4, rmean4;
-
-   if (resume == 0)
-   {
-      /* Defining initial composition */
-      /* Providing noise from -0.001 to +0.001*/
-
-      for (i = 0; i < lx; ++i)
-      {
-         for (j = 0; j < ly; ++j)
-         {
-            ij = i * ly + j;
-
-            c[ij] = c_avg;
-         }
-      }
-   }
-   else
-   {
-
-      /* Loading initial composition */
-      FILE *fp;
-      char fName[30] = "";
-      strcat(fName, "Output/Data/output_");
-      strcat(fName, resume_from_str);
-      strcat(fName, ".dat");
-      fp = fopen(fName, "r");
-      if (fp == NULL)
-      {
-         printf("Cannot open file\n");
-         return 1;
-      }
-      for (x = 0; x < lx; ++x)
-      {
-         for (y = 0; y < ly; ++y)
-         {
-
-            fscanf(fp, "%lf", &c[y + ly * x]);
-         }
-         fscanf(fp, "%lf", &c[y + ly * x]);
-      }
-   }
-
-   /* for fe-Cr at 400 C */
-
-   /*
-   aa=1;
-   bb=-2.041;
-   cc=1.2214;
-   dd=-0.1837;
-   ee=0.0081;
-   */
-
-
-   /* for fe-Cu at 1300 C
-
-   aa=1;
-   bb=-1.76;
-   cc= 0.9504;
-   dd=-0.1458;
-   ee=0.0077;
-   */
-
-   pp1 = (-6 * bb + sqrt(36 * bb * bb - 96 * aa * cc)) / (24 * aa);
-   pp2 = (-6 * bb - sqrt(36 * bb * bb - 96 * aa * cc)) / (24 * aa);
-
-   // printf("\n pp1=%lf pp2= %lf", pp1, pp2);
-
-   int rand1, rand2, rand3, rand4;
-
-   rand1 = rand();
-   rand2 = rand();
-   rand3 = rand();
-   rand4 = rand();
-
-   if ((c_avg >= pp1) || (c_avg <= pp2))
-
-   {
-
-      long int SEED = -949;
-      long int SEED2 = -819;
-      long int SEED3 = -16;
-      long int SEED4 = -49;
-
-      random_numA = dmatrix(0, lx, 0, ly);
-      random_numB = dmatrix(0, lx, 0, ly);
-      random_numC = dmatrix(0, lx, 0, ly);
-      random_numD = dmatrix(0, lx, 0, ly);
-
-      for (i = 0; i < lx; ++i)
-      {
-         for (j = 0; j < ly; ++j)
-         {
-            ij = i * ly + j;
-
-            random_numA[i][j] = 0.00;
-            random_numB[i][j] = 0.0;
-            random_numC[i][j] = 0.0;
-            random_numD[i][j] = 0.0;
-         }
-      }
-
-      for (i = 0; i < lx; ++i)
-      {
-         for (j = 0; j < ly; ++j)
-         {
-            ij = i * ly + j;
-
-            random_numA[i][j] = gasdev(&SEED);
-            random_numB[i][j] = gasdev(&SEED2);
-            random_numC[i][j] = gasdev(&SEED3);
-            random_numD[i][j] = gasdev(&SEED4);
-         }
-      }
-
-      rsum1 = 0.0;
-      rsum2 = 0.0;
-      rsum3 = 0.0;
-      rsum4 = 0.0;
-
-      for (i = 0; i < lx; ++i)
-      {
-         for (j = 0; j < ly; ++j)
-         {
-            ij = i * ly + j;
-
-            random_numA[i][j] = random_numA[i][j] * 0.005;
-            rsum1 += random_numA[i][j];
-            random_numB[i][j] = random_numB[i][j] * 0.005;
-            rsum2 += random_numB[i][j];
-            random_numC[i][j] = random_numC[i][j] * 0.005;
-            rsum3 += random_numC[i][j];
-            random_numD[i][j] = random_numD[i][j] * 0.005;
-            rsum4 += random_numD[i][j];
-         }
-      }
-      rmean1 = rsum1 / (double)(lx * ly);
-      rmean2 = rsum2 / (double)(lx * ly);
-      rmean3 = rsum3 / (double)(lx * ly);
-      rmean4 = rsum4 / (double)(lx * ly);
-
-      for (i = 0; i < lx; ++i)
-      {
-         for (j = 0; j < ly; ++j)
-         {
-            ij = i * ly + j;
-
-            c[ij] += random_numA[i][j] - rmean1;
-            c[ij] += random_numB[i][j] - rmean2;
-            c[ij] += random_numC[i][j] - rmean3;
-            c[ij] += random_numD[i][j] - rmean4;
-         }
-      }
-
-      free_dmatrix(random_numA, 0, lx, 0, ly);
-      free_dmatrix(random_numB, 0, lx, 0, ly);
-      free_dmatrix(random_numC, 0, lx, 0, ly);
-      free_dmatrix(random_numD, 0, lx, 0, ly);
-
-      for (x = 0; x < lx; ++x)
-      {
-         for (y = 0; y < ly; ++y)
-         {
-
-            {
-               c[y + ly * x] = c[y + ly * x] + (-1 + 2 * ((double)rand() / (double)RAND_MAX)) / 10; /* ((double)rand()/(double)RAND_MAX) generates the random no. between 0 and 1*/
+    for (int pass = 0; pass < 4; pass++) {
+        /* Fill noise array with Gaussian samples, then mean-subtract */
+        rsum = 0.0;
+        for (int i = 0; i < lx; i++)
+            for (int j = 0; j < ly; j++) {
+                noise[i][j] = gasdev(&seeds[pass]) * noise_scale;
+                rsum += noise[i][j];
             }
-         }
-      }
+        rmean = rsum / (double)(lx * ly);
 
-      delkx = 2.0 * pi / (lx * delx);
-      delky = 2.0 * pi / (ly * dely);
+        for (int i = 0; i < lx; i++)
+            for (int j = 0; j < ly; j++)
+                composition[IDX2(i, j, ly)] += noise[i][j] - rmean;
+    }
+    free_dmatrix(noise, 0, lx, 0, ly);
+}
 
-      halflx = (int)lx / 2.0;
-      halfly = (int)ly / 2.0;
+/* ── Main ─────────────────────────────────────────────────────────────────── */
+int main(void)
+{
+    AlloySim2D p;
+    read_params(&p);
 
-      /* Running the code for given time */
-      total_time_time_interval = ((total_time) / delt);
+    int lx = p.grid_x;
+    int ly = p.grid_y;
+    int n_total = lx * ly;
 
-      for (n = 1; n <= total_time_time_interval; ++n)
-      {
+    /* Spinodal inflection points of g(c) */
+    double discriminant = 36.0*p.bb*p.bb - 96.0*p.aa*p.cc;
+    double pp1 = (-6.0*p.bb + sqrt(discriminant)) / (24.0*p.aa);
+    double pp2 = (-6.0*p.bb - sqrt(discriminant)) / (24.0*p.aa);
+    if (pp1 < pp2) { double tmp = pp1; pp1 = pp2; pp2 = tmp; } /* pp1 > pp2 */
 
-         /* Defining free energy */
+    int inside_spinodal = (p.c_avg >= pp2 && p.c_avg <= pp1);
 
-         for (x = 0; x < lx; ++x)
-         {
-            for (y = 0; y < ly; ++y)
-            {
+    /* ── FFTW allocations ─────────────────────────────────────────────────── */
+    fftw_complex *composition        = fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *composition_hat    = fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *mu_field           = fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *mu_hat             = fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *mobility_field     = fftw_malloc(sizeof(fftw_complex) * n_total);
+    /* flux = M · IFFT(ik·[μ̂ + κk²ĉ]),  computed per direction */
+    fftw_complex *flux_work_hat_x    = fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *flux_work_hat_y    = fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *flux_work_x        = fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *flux_work_y        = fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *weighted_flux_x    = fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *weighted_flux_y    = fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *weighted_flux_hat_x= fftw_malloc(sizeof(fftw_complex) * n_total);
+    fftw_complex *weighted_flux_hat_y= fftw_malloc(sizeof(fftw_complex) * n_total);
 
-               g[y + ly * x] = -(Ag / Hg) * (4 * aa * (c[y + ly * x]) * (c[y + ly * x]) * (c[y + ly * x]) + 3 * bb * (c[y + ly * x]) * (c[y + ly * x]) + 2 * cc * (c[y + ly * x]) + dd); /* Derivative of  free energy */
-                                                                                                                                                                                         // M1[y+ly*x] = fabs(1/(12*aa*(c[y+ly*x])*(c[y+ly*x]) + 6*bb*(c[y+ly*x])+ 2*cc));
-               M1[y + ly * x] = (c[y + ly * x]) * (1 - c[y + ly * x]);
-            }
-         }
+    if (!composition || !composition_hat || !mu_field || !mu_hat ||
+        !mobility_field || !flux_work_hat_x || !flux_work_hat_y ||
+        !flux_work_x || !flux_work_y || !weighted_flux_x || !weighted_flux_y ||
+        !weighted_flux_hat_x || !weighted_flux_hat_y) {
+        fprintf(stderr, "ERROR: FFTW allocation failed\n");
+        return EXIT_FAILURE;
+    }
 
+    /* FFT plans */
+    fftw_plan plan_fwd_c    = fftw_plan_dft_2d(lx, ly, composition,        composition_hat,     FFTW_FORWARD,  FFTW_ESTIMATE);
+    fftw_plan plan_fwd_mu   = fftw_plan_dft_2d(lx, ly, mu_field,           mu_hat,              FFTW_FORWARD,  FFTW_ESTIMATE);
+    fftw_plan plan_bwd_c    = fftw_plan_dft_2d(lx, ly, composition_hat,    composition,         FFTW_BACKWARD, FFTW_ESTIMATE);
+    fftw_plan plan_bwd_fx   = fftw_plan_dft_2d(lx, ly, flux_work_hat_x,    flux_work_x,         FFTW_BACKWARD, FFTW_ESTIMATE);
+    fftw_plan plan_bwd_fy   = fftw_plan_dft_2d(lx, ly, flux_work_hat_y,    flux_work_y,         FFTW_BACKWARD, FFTW_ESTIMATE);
+    fftw_plan plan_fwd_wfx  = fftw_plan_dft_2d(lx, ly, weighted_flux_x,    weighted_flux_hat_x, FFTW_FORWARD,  FFTW_ESTIMATE);
+    fftw_plan plan_fwd_wfy  = fftw_plan_dft_2d(lx, ly, weighted_flux_y,    weighted_flux_hat_y, FFTW_FORWARD,  FFTW_ESTIMATE);
 
-         /* FFT of composition and  free energy */
+    /* ── Initial condition ────────────────────────────────────────────────── */
+    if (p.resume == 0) {
+        /* Initialise to c_avg */
+        for (int n = 0; n < n_total; n++)
+            composition[n] = p.c_avg;
 
-         fftw_execute(q);
-         fftw_execute(p);
+        /* Add noise appropriate to the thermodynamic region */
+        if (inside_spinodal) {
+            /* Spinodal: small uniform noise sufficient to trigger decomposition */
+            for (int i = 0; i < lx; i++)
+                for (int j = 0; j < ly; j++)
+                    composition[IDX2(i, j, ly)] +=
+                        (-1.0 + 2.0*((double)rand()/(double)RAND_MAX)) / 200.0;
+        } else {
+            /*
+             * Nucleation regime: larger Gaussian noise to provide nuclei.
+             * Seeds are negative to initialise the NR RNG from scratch.
+             */
+            long seeds[4] = { -949L, -819L, -16L, -49L };
+            add_thermal_noise(composition, lx, ly, 0.005, seeds);
+            /* Additional uniform perturbation on top */
+            for (int i = 0; i < lx; i++)
+                for (int j = 0; j < ly; j++)
+                    composition[IDX2(i, j, ly)] +=
+                        (-1.0 + 2.0*((double)rand()/(double)RAND_MAX)) / 10.0;
+        }
+    } else {
+        char resume_path[80];
+        snprintf(resume_path, sizeof(resume_path),
+                 "Output/Data/output_%s.dat", p.resume_from_str);
+        load_field_2d(composition, lx, ly, resume_path);
+    }
 
-         for (x = 0; x < lx; ++x)
-         {
-            if (x < halflx)
-            {
-               kfx = x * delkx;
+    /*
+     * In the nucleation regime the sign of the driving force is flipped:
+     * outside the spinodal the gradient of g pushes towards phase separation
+     * only if it is used with the correct sign in the flux.
+     * sign_mu = +1 inside spinodal, -1 outside spinodal.
+     */
+    double sign_mu = inside_spinodal ? 1.0 : -1.0;
+
+    /*
+     * Persistent RNG seeds for in-loop thermal noise.
+     * Negative values initialise the NR generator; they evolve every call.
+     */
+    long noise_seeds[4] = { -949L, -819L, -16L, -49L };
+    /* Thermal noise is added only for the first 1000 steps in nucleation mode */
+    int noise_steps = inside_spinodal ? 0 : 1000;
+
+    /* ── Time integration ─────────────────────────────────────────────────── */
+    int step_start = (int)round(p.resume_from / p.dt);
+    int step_end   = (int)round(p.total_time  / p.dt);
+
+    for (int step = 1; step <= step_end; step++) {
+        double time = step * p.dt;
+
+        /* Compute chemical potential and mobility at every grid point */
+        for (int i = 0; i < lx; i++)
+            for (int j = 0; j < ly; j++) {
+                double c_val = creal(composition[IDX2(i, j, ly)]);
+                mu_field[IDX2(i, j, ly)]       = sign_mu * chem_potential(&p, c_val);
+                mobility_field[IDX2(i, j, ly)] = mobility(c_val);
             }
 
-            else
-            {
-               kfx = (x - lx) * delkx;
+        /* Forward FFT of composition and chemical potential */
+        fftw_execute(plan_fwd_mu);
+        fftw_execute(plan_fwd_c);
+
+        /*
+         * Build  ik·[μ̂ + κk²ĉ]  in each direction.
+         * κ is absorbed into Hg (barrier height sets the interface width).
+         */
+        for (int i = 0; i < lx; i++) {
+            double kx  = kfreq(i, lx, p.dx);
+            double kx2 = kx * kx;
+            for (int j = 0; j < ly; j++) {
+                double ky  = kfreq(j, ly, p.dy);
+                double ky2 = ky * ky;
+                double k2  = kx2 + ky2;
+                int    idx = IDX2(i, j, ly);
+                fftw_complex driving = mu_hat[idx] + k2 * composition_hat[idx];
+                flux_work_hat_x[idx] = _Complex_I * kx * driving;
+                flux_work_hat_y[idx] = _Complex_I * ky * driving;
             }
-            kfx2 = kfx * kfx;
+        }
 
-            for (y = 0; y < ly; ++y)
-            {
-               if (y < halfly)
-               {
-                  kfy = y * delky;
-               }
+        /* IFFT of fluxes → real-space flux components */
+        fftw_execute(plan_bwd_fx);
+        fftw_execute(plan_bwd_fy);
 
-               else
-               {
-                  kfy = (y - ly) * delky;
-               }
-
-               kfy2 = kfy * kfy;
-               k2 = kfx2 + kfy2;
-               k4 = k2 * k2;
-
-               f1tildax[y + ly * x] = _Complex_I * (kfx) * (gtilda[y + ly * x] + k2 * ctilda[y + ly * x]);
-               f1tilday[y + ly * x] = _Complex_I * (kfy) * (gtilda[y + ly * x] + k2 * ctilda[y + ly * x]);
-            }
-         }
-
-         fftw_execute(q2x);
-         fftw_execute(q2y);
-
-         for (x = 0; x < lx; ++x)
-         {
-            for (y = 0; y < ly; ++y)
-            {
-               f1x[y + ly * x] = 1. * f1x[y + ly * x] / (lx * ly);
-               f1y[y + ly * x] = 1. * f1y[y + ly * x] / (lx * ly);
-            }
-         }
-
-         for (x = 0; x < lx; ++x)
-         {
-            for (y = 0; y < ly; ++y)
-            {
-
-               f2x[y + ly * x] = creal(f1x[y + ly * x]) * M1[y + ly * x];
-               f2y[y + ly * x] = creal(f1y[y + ly * x]) * M1[y + ly * x];
-            }
-         }
-
-         fftw_execute(q1x);
-         fftw_execute(q1y);
-
-         for (i = 0; i < lx; ++i)
-         {
-            if (i < halflx)
-            {
-               kfx = i * delkx;
+        /* Normalise and multiply by degenerate mobility M(c) */
+        double inv_n = 1.0 / (double)n_total;
+        for (int i = 0; i < lx; i++)
+            for (int j = 0; j < ly; j++) {
+                int idx = IDX2(i, j, ly);
+                double M = creal(mobility_field[idx]);
+                weighted_flux_x[idx] = creal(flux_work_x[idx]) * inv_n * M;
+                weighted_flux_y[idx] = creal(flux_work_y[idx]) * inv_n * M;
             }
 
-            else
-            {
-               kfx = (i - lx) * delkx;
+        /* Forward FFT of mobility-weighted fluxes */
+        fftw_execute(plan_fwd_wfx);
+        fftw_execute(plan_fwd_wfy);
+
+        /*
+         * Semi-implicit Crank-Nicolson update:
+         *   ĉ(t+Δt) = [ (1 + 0.5Δt·k⁴)·ĉ(t)
+         *               + Δt·i(k_x·f̂₂ₓ + k_y·f̂₂ᵧ) ]
+         *             / (1 + 0.5Δt·k⁴)
+         */
+        for (int i = 0; i < lx; i++) {
+            double kx  = kfreq(i, lx, p.dx);
+            double kx2 = kx * kx;
+            for (int j = 0; j < ly; j++) {
+                double ky  = kfreq(j, ly, p.dy);
+                double ky2 = ky * ky;
+                double k2  = kx2 + ky2;
+                double k4  = k2 * k2;
+                int    idx = IDX2(i, j, ly);
+                double stabiliser = 0.5 * p.dt * k4;
+                fftw_complex flux_div =
+                    _Complex_I * (kx * weighted_flux_hat_x[idx]
+                                + ky * weighted_flux_hat_y[idx]);
+                composition_hat[idx] =
+                    ((1.0 + stabiliser) * composition_hat[idx] + p.dt * flux_div)
+                    / (1.0 + stabiliser);
             }
-            kfx2 = kfx * kfx;
-
-            for (j = 0; j < ly; ++j)
-            {
-               if (j < halfly)
-               {
-                  kfy = j * delky;
-               }
-
-               else
-               {
-                  kfy = (j - ly) * delky;
-               }
-
-               kfy2 = kfy * kfy;
-               k2 = kfx2 + kfy2;
-               k4 = k2 * k2;
-
-               ctilda[j + ly * i] = 1. * (((1 + 0.5 * delt * k4) * ctilda[j + ly * i] + delt * (f2tildax[j + ly * i] * kfx + f2tilday[j + ly * i] * kfy) * _Complex_I) / (1 + 0.5 * delt * k4)); /* no need need to define new variable and replace ctilda values */
-            }
-         }
-
-         // saving data files
-
-         /* saving composition in 2D */
-         time = n * delt;
-         if (fmod(time, time_interval) == 0)
-         {
-            sprintf(NAME, "Output/Data/output_%.2f.dat", n * delt);
-            fptr = fopen(NAME, "w");
-
-            for (i = 0; i < lx; i++)
-            {
-               for (j = 0; j < ly; j++)
-               {
-                  ij = ly * i + j;
-                  fprintf(fptr, "%lf ", creal(c[ij]));
-               }
-               fprintf(fptr, "\n");
-            }
-            fclose(fptr);
-         }
-
-         if (n <= 1000)
-
-         {
-
-            long int SEED = -949;
-            long int SEED2 = -819;
-            long int SEED3 = -16;
-            long int SEED4 = -49;
-
-            random_numA = dmatrix(0, lx, 0, ly);
-            random_numB = dmatrix(0, lx, 0, ly);
-            random_numC = dmatrix(0, lx, 0, ly);
-            random_numD = dmatrix(0, lx, 0, ly);
-
-            for (i = 0; i < lx; ++i)
-            {
-               for (j = 0; j < ly; ++j)
-               {
-                  ij = i * ly + j;
-
-                  random_numA[i][j] = 0.0;
-                  random_numB[i][j] = 0.0;
-                  random_numC[i][j] = 0.0;
-                  random_numD[i][j] = 0.0;
-               }
-            }
-
-            for (i = 0; i < lx; ++i)
-            {
-               for (j = 0; j < ly; ++j)
-               {
-                  ij = i * ly + j;
-
-                  random_numA[i][j] = gasdev(&SEED);
-                  random_numB[i][j] = gasdev(&SEED2);
-                  random_numC[i][j] = gasdev(&SEED3);
-                  random_numD[i][j] = gasdev(&SEED4);
-               }
-            }
-
-            rsum1 = 0.0;
-            rsum2 = 0.0;
-            rsum3 = 0.0;
-            rsum4 = 0.0;
-
-            for (i = 0; i < lx; ++i)
-            {
-               for (j = 0; j < ly; ++j)
-               {
-                  ij = i * ly + j;
-
-                  random_numA[i][j] = random_numA[i][j] * 0.005;
-                  rsum1 += random_numA[i][j];
-                  random_numB[i][j] = random_numB[i][j] * 0.005;
-                  rsum2 += random_numB[i][j];
-                  random_numC[i][j] = random_numC[i][j] * 0.005;
-                  rsum3 += random_numC[i][j];
-                  random_numD[i][j] = random_numD[i][j] * 0.005;
-                  rsum4 += random_numD[i][j];
-               }
-            }
-            rmean1 = rsum1 / (double)(lx * ly);
-            rmean2 = rsum2 / (double)(lx * ly);
-            rmean3 = rsum3 / (double)(lx * ly);
-            rmean4 = rsum4 / (double)(lx * ly);
-
-            for (i = 0; i < lx; ++i)
-            {
-               for (j = 0; j < ly; ++j)
-               {
-                  ij = i * ly + j;
-
-                  c[ij] += random_numA[i][j] - rmean1;
-                  c[ij] += random_numB[i][j] - rmean2;
-                  c[ij] += random_numC[i][j] - rmean3;
-                  c[ij] += random_numD[i][j] - rmean4;
-               }
-            }
-
-            free_dmatrix(random_numA, 0, lx, 0, ly);
-            free_dmatrix(random_numB, 0, lx, 0, ly);
-            free_dmatrix(random_numC, 0, lx, 0, ly);
-            free_dmatrix(random_numD, 0, lx, 0, ly);
-         }
-      }
-   }
-
-   if ((c_avg <= pp1) && (c_avg >= pp2))
-
-   {
-
-      for (x = 0; x < lx; ++x)
-      {
-         for (y = 0; y < ly; ++y)
-         {
-
-            {
-               c[y + ly * x] = c_avg + (-1 + 2 * ((double)rand() / (double)RAND_MAX)) / 200; /* ((double)rand()/(double)RAND_MAX) generates the random no. between 0 and 1*/
-            }
-         }
-      }
-
-      delkx = 2.0 * pi / (lx * delx);
-      delky = 2.0 * pi / (ly * dely);
-
-      halflx = (int)lx / 2.0;
-      halfly = (int)ly / 2.0;
-
-      /* Running the code for given time */
-
-      total_time_time_interval = ((total_time) / delt);
-
-      for (n = 1; n <= total_time_time_interval; ++n)
-      {
-
-         /* Defining free energy */
-
-         for (x = 0; x < lx; ++x)
-         {
-            for (y = 0; y < ly; ++y)
-            {
-               // g[y+ly*x]=  (4*aa*(c[y+ly*x])*(c[y+ly*x])*(c[y+ly*x]) + 3*bb*(c[y+ly*x])*(c[y+ly*x]) + 2*cc*(c[y+ly*x]) +dd);
-               g[y + ly * x] = (Ag / Hg) * (4 * aa * (c[y + ly * x]) * (c[y + ly * x]) * (c[y + ly * x]) + 3 * bb * (c[y + ly * x]) * (c[y + ly * x]) + 2 * cc * (c[y + ly * x]) + dd);
-               // M1[y+ly*x] = fabs(1/(12*aa*(c[y+ly*x])*(c[y+ly*x]) + 6*bb*(c[y+ly*x])+ 2*cc));
-               M1[y + ly * x] = (c[y + ly * x]) * (1 - c[y + ly * x]);
-            }
-         }
-
-         // printf("time is = %lf\n", n * delt);
-
-         /* FFT of composition and  free energy */
-
-         fftw_execute(q);
-         fftw_execute(p);
-
-         for (x = 0; x < lx; ++x)
-         {
-            if (x < halflx)
-            {
-               kfx = x * delkx;
-            }
-
-            else
-            {
-               kfx = (x - lx) * delkx;
-            }
-            kfx2 = kfx * kfx;
-
-            for (y = 0; y < ly; ++y)
-            {
-               if (y < halfly)
-               {
-                  kfy = y * delky;
-               }
-
-               else
-               {
-                  kfy = (y - ly) * delky;
-               }
-
-               kfy2 = kfy * kfy;
-               k2 = kfx2 + kfy2;
-               k4 = k2 * k2;
-
-               f1tildax[y + ly * x] = _Complex_I * (kfx) * (gtilda[y + ly * x] + k2 * ctilda[y + ly * x]);
-               f1tilday[y + ly * x] = _Complex_I * (kfy) * (gtilda[y + ly * x] + k2 * ctilda[y + ly * x]);
-            }
-         }
-
-         fftw_execute(q2x);
-         fftw_execute(q2y);
-
-         for (x = 0; x < lx; ++x)
-         {
-            for (y = 0; y < ly; ++y)
-            {
-               f1x[y + ly * x] = 1. * f1x[y + ly * x] / (lx * ly);
-               f1y[y + ly * x] = 1. * f1y[y + ly * x] / (lx * ly);
-            }
-         }
-
-         for (x = 0; x < lx; ++x)
-         {
-            for (y = 0; y < ly; ++y)
-            {
-
-               f2x[y + ly * x] = creal(f1x[y + ly * x]) * M1[y + ly * x];
-               f2y[y + ly * x] = creal(f1y[y + ly * x]) * M1[y + ly * x];
-            }
-         }
-
-         fftw_execute(q1x);
-         fftw_execute(q1y);
-
-         for (i = 0; i < lx; ++i)
-         {
-            if (i < halflx)
-            {
-               kfx = i * delkx;
-            }
-
-            else
-            {
-               kfx = (i - lx) * delkx;
-            }
-            kfx2 = kfx * kfx;
-
-            for (j = 0; j < ly; ++j)
-            {
-               if (j < halfly)
-               {
-                  kfy = j * delky;
-               }
-
-               else
-               {
-                  kfy = (j - ly) * delky;
-               }
-
-               kfy2 = kfy * kfy;
-               k2 = kfx2 + kfy2;
-               k4 = k2 * k2;
-
-               ctilda[j + ly * i] = 1. * (((1 + 0.5 * delt * k4) * ctilda[j + ly * i] + delt * (f2tildax[j + ly * i] * kfx + f2tilday[j + ly * i] * kfy) * _Complex_I) / (1 + 0.5 * delt * k4)); /* no need need to define new variable and replace ctilda values */
-            }
-         }
-
-         /* IFFT of final composition */
-
-         fftw_execute(s);
-
-         /* Normalization of composition */
-
-         for (x = 0; x < lx; ++x)
-         {
-            for (y = 0; y < ly; ++y)
-
-            {
-               c[y + ly * x] = 1. * c[y + ly * x] / (lx * ly); /* can be written as c[i] *= 1./(lx*ly) */
-            }
-         }
-
-         // saving data files
-
-         /* saving composition in 2D */
-         time = n * delt;
-         // double m = fmod(time, time_interval);
-         if (fmod(time, time_interval) == 0)
-         {
-            sprintf(NAME, "Output/Data/output_%.2f.dat", n * delt);
-            fptr = fopen(NAME, "w");
-
-            for (i = 0; i < lx; i++)
-            {
-               for (j = 0; j < ly; j++)
-               {
-                  ij = ly * i + j;
-                  fprintf(fptr, "%lf ", creal(c[ij]));
-               }
-               fprintf(fptr, "\n");
-            }
-            fclose(fptr);
-         }
-      }
-   }
-
-   fftw_free(c);
-   fftw_free(g);
-   fftw_free(M1);
-
-   fftw_destroy_plan(p);
-   fftw_destroy_plan(q);
-   fftw_destroy_plan(q1x);
-   fftw_destroy_plan(s);
-
-   fftw_cleanup();
-
-   fclose(fp);
-
-   return 0;
+        }
+
+        /* Inverse FFT back to real space */
+        fftw_execute(plan_bwd_c);
+
+        /* Normalise */
+        for (int n = 0; n < n_total; n++)
+            composition[n] *= inv_n;
+
+        /* Thermal noise injection during early steps in nucleation regime */
+        if (step <= noise_steps)
+            add_thermal_noise(composition, lx, ly, 0.005, noise_seeds);
+
+        /* Save output */
+        if (should_save(step, p.dt, p.save_interval))
+            save_field_2d(composition, lx, ly, time);
+    }
+
+    /* ── Cleanup ──────────────────────────────────────────────────────────── */
+    fftw_destroy_plan(plan_fwd_c);
+    fftw_destroy_plan(plan_fwd_mu);
+    fftw_destroy_plan(plan_bwd_c);
+    fftw_destroy_plan(plan_bwd_fx);
+    fftw_destroy_plan(plan_bwd_fy);
+    fftw_destroy_plan(plan_fwd_wfx);
+    fftw_destroy_plan(plan_fwd_wfy);
+
+    fftw_free(composition);
+    fftw_free(composition_hat);
+    fftw_free(mu_field);
+    fftw_free(mu_hat);
+    fftw_free(mobility_field);
+    fftw_free(flux_work_hat_x);
+    fftw_free(flux_work_hat_y);
+    fftw_free(flux_work_x);
+    fftw_free(flux_work_y);
+    fftw_free(weighted_flux_x);
+    fftw_free(weighted_flux_y);
+    fftw_free(weighted_flux_hat_x);
+    fftw_free(weighted_flux_hat_y);
+    fftw_cleanup();
+
+    return EXIT_SUCCESS;
 }

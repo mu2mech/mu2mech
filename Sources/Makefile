@@ -1,14 +1,24 @@
 
-CC				=	gcc
-CFLAGS			=	-L/usr/local/fftw/lib  -lfftw3 -lm -static -static-libgcc -static-libstdc++
-CPPFLAGS		=	-fPIC
+CC       = gcc
+CFLAGS   = -lfftw3 -lm -static -static-libgcc -static-libstdc++
+CPPFLAGS = -fPIC -Wall -Wno-unused-variable
 
+# All solver binaries (named .o to match the rest of the project)
+SOLVERS  = ch2d_qualitative.o ch2d_alloy.o ch3d_alloy.o
+POSTPROC = hkl_2d.o hkl_3d.o
 
-output_objects 	=	ch2d_alloy.o ch3d_alloy.o ch2d_qualitative.o hkl_2d.o hkl_3d.o
+all: $(SOLVERS) $(POSTPROC)
 
-all: $(output_objects) 
-$(output_objects): %.o: %.c
-	$(CC) -w $< -o $@ $(CFLAGS) $(CPPFLAGS) 
+# CH solvers depend on the shared header, kv parser, and helper .c files
+$(SOLVERS): %.o: %.c ch_common.h kv_parser.h nrutil.c gasdev.c
+	$(CC) $< -o $@ $(CFLAGS) $(CPPFLAGS)
+
+# Post-processing tools use kv_parser.h but have no FFTW dependency
+hkl_2d.o: hkl_2d.c kv_parser.h
+	$(CC) $< -o $@ -lm -static -static-libgcc -static-libstdc++ $(CPPFLAGS)
+
+hkl_3d.o: hkl_3d.c kv_parser.h
+	$(CC) $< -o $@ -lm -static -static-libgcc -static-libstdc++ $(CPPFLAGS)
 
 clean:
-	rm *.o 
+	rm -f $(SOLVERS) $(POSTPROC)

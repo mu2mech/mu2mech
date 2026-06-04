@@ -1,7 +1,7 @@
 import ctypes
 import sys
 import os
-from PySide2.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal
 
 
 class Worker(QObject):

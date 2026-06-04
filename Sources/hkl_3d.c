@@ -1,307 +1,228 @@
+/*
+ * hkl_3d.c — 3-D particle labelling and size analysis.
+ *
+ * Identical in structure to hkl_2d.c but operates on a 3-D composition field.
+ * Reads Output/Data/output_<time>.dat written by ch3d_alloy (one value per line).
+ *
+ * Effective radius from  r = (3V / 4π)^(1/3).
+ *
+ * Input file (input.dat):
+ *   lx    <int>    grid points in x
+ *   ly    <int>    grid points in y
+ *   lz    <int>    grid points in z
+ *   time  <float>  snapshot time
+ */
+
+#include "kv_parser.h"   /* KVDoc, kv_load, kv_get_* — no FFTW dependency */
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
-int minimum(int p_left, int p_down, int p_back, int p_right, int p_up, int p_front);
-int maximum(int p_left, int p_down, int p_back, int p_right, int p_up, int p_front);
+#define PHASE_THRESHOLD  0.5
+#define MAX_PARTICLES   200000
 
-int main()
+/* ── Forward declarations ─────────────────────────────────────────────────── */
+static int min_nonzero_label_6(int left, int down, int back,
+                                int right, int up,  int front);
+
+/* ── File helper for data/output files (separate from kv_parser's helper) ── */
+static FILE *fopen_or_die(const char *path, const char *mode)
 {
-
-    int ijk, j, i1, i2, i3, nx = 600, ny = 600, nz = 64, list = 60000, interval = 10000;
-    FILE *fpr, *fpw;
-    double tmpelement;
-    char ch[50], NAME[50];
-    double v_frac[list];
-    int p, right, left, up, back, down, front, a, b, c, d, e, f;
-    int volume[200000];
-    int iplus, iminus, jplus, jminus, zplus, zminus;
-    int iplus2, iminus2, jplus2, jminus2, zplus2, zminus2;
-    int g_left;
-    int g_down;
-    int g_back;
-    int g_right;
-    int g_up;
-    int g_front;
-    double x, y, z;
-    double radius[50000];
-    double *comp = (double *)malloc(nx * ny * nz * sizeof(double));
-    int *particle = (int *)malloc(nx * ny * nz * sizeof(int));
-    int label, g, kij;
-    int j1, j2, j3;
-    int a1, a2, a3, m1;
-    int b1, b2, b3, m2;
-    int c1, c2, c3, m3;
-    int equal, max;
-    double r_avg;
-    double delt = 0.01;
-    double delx = 2.0;
-    char junk[100];
-    float i;
-
-    /* Creating a file and Getting data from input file */
-    FILE *fp;
-    fp = fopen("input.dat", "r");
-    if (fp == NULL)
-    {
-        printf("Cannot open file");
+    FILE *f = fopen(path, mode);
+    if (!f) {
+        fprintf(stderr, "ERROR: cannot open '%s'\n", path);
+        exit(EXIT_FAILURE);
     }
-    fscanf(fp, "\
-   %s%d\
-   %s%d\
-   %s%d\
-   %s%f",
-           junk, &nx,
-           junk, &ny,
-           junk, &nz,
-           junk, &i);
-    fclose(fp);
-
-    sprintf(ch, "./Output/Data/output_%0.2f.dat", i);
-
-    if ((fpr = fopen(ch, "r")) == NULL)
-    {
-        printf("Unable to open file %s", ch);
-        printf("Exiting\n");
-        exit(0);
-    }
-    else
-    {
-        fpw = fopen(ch, "r");
-    }
-
-    for (i1 = 0; i1 < nx; ++i1)
-    {
-        for (i2 = 0; i2 < ny; ++i2)
-        {
-            for (i3 = 0; i3 < nz; ++i3)
-            {
-                ijk = i3 + i2 * nz + i1 * ny * nz;
-                particle[ijk] = 0;
-
-                fscanf(fpr, "%lf\t%lf\t%lf\t%lf\n", &x, &y, &z, &comp[ijk]);
-            }
-        }
-    }
-    fclose(fpr);
-
-    p = 1;
-    for (i1 = 0; i1 < nx; ++i1)
-    {
-        for (i2 = 0; i2 < ny; ++i2)
-        {
-            for (i3 = 0; i3 < nz; ++i3)
-            {
-                ijk = i3 + i2 * nz + i1 * ny * nz;
-                iplus = (i1 + 1 + nx) % nx;
-                jplus = (i2 + 1 + ny) % ny;
-                zplus = (i3 + 1 + nz) % nz;
-
-                iminus = ((i1 - 1) + nx) % nx;
-                jminus = ((i2 - 1) + ny) % ny;
-                zminus = ((i3 - 1) + nz) % nz;
-
-                left = i3 + i2 * nz + (iminus)*ny * nz;
-                right = i3 + i2 * nz + (iplus)*ny * nz;
-                up = i3 + (jplus)*nz + i1 * ny * nz;
-                down = i3 + (jminus)*nz + i1 * ny * nz;
-                back = zminus + i2 * nz + i1 * nz * ny;
-                front = zplus + i2 * nz + i1 * nz * ny;
-
-                if ((comp[ijk] > 0.5) && (particle[ijk] == 0))
-                {
-                    g_left = particle[left];
-                    g_down = particle[down];
-                    g_back = particle[back];
-                    if ((particle[down] != 0) || (particle[left] != 0) || (particle[back] != 0) || (particle[up] != 0) || (particle[right] != 0) || (particle[front] != 0))
-                    {
-                        particle[ijk] = minimum(g_left, g_down, g_back, g_right, g_up, g_front);
-                    }
-                    else
-                    {
-                        particle[ijk] = p;
-                        p = p + 1;
-                    }
-                }
-            }
-        }
-    }
-
-    for (i1 = 0; i1 < nx; ++i1)
-    {
-        for (i2 = 0; i2 < ny; ++i2)
-        {
-            for (i3 = 0; i3 < nz; ++i3)
-            {
-                ijk = i3 + i2 * nz + i1 * ny * nz;
-                iplus = (i1 + 1 + nx) % nx;
-                jplus = (i2 + 1 + ny) % ny;
-                zplus = (i3 + 1 + nz) % nz;
-
-                iminus = ((i1 - 1) + nx) % nx;
-                jminus = ((i2 - 1) + ny) % ny;
-                zminus = ((i3 - 1) + nz) % nz;
-
-                left = i3 + i2 * nz + (iminus)*ny * nz;
-                right = i3 + i2 * nz + (iplus)*ny * nz;
-                up = i3 + (jplus)*nz + i1 * ny * nz;
-                down = i3 + (jminus)*nz + i1 * ny * nz;
-                back = zminus + i2 * nz + i1 * nz * ny;
-                front = zplus + i2 * nz + i1 * nz * ny;
-
-                equal = particle[ijk];
-                if (particle[ijk] > 0)
-                {
-                    g_left = particle[left];
-                    g_down = particle[down];
-                    g_back = particle[back];
-                    g_right = particle[right];
-                    g_up = particle[up];
-                    g_front = particle[front];
-                    max = minimum(g_left, g_down, g_back, g_right, g_up, g_front);
-                    if ((particle[down] != 0) || (particle[left] != 0) || (particle[back] != 0) || (particle[up] != 0) || (particle[right] != 0) || (particle[front] != 0))
-                    {
-                        if (equal > max)
-                        {
-                            g = g + 1;
-                            label = minimum(g_left, g_down, g_back, g_right, g_up, g_front);
-
-                            for (a1 = 0; a1 < nx; ++a1)
-                            {
-                                for (a2 = 0; a2 < ny; ++a2)
-                                {
-                                    for (a3 = 0; a3 < nz; ++a3)
-                                    {
-                                        m1 = a3 + a2 * nz + a1 * ny * nz;
-                                        if (particle[m1] == equal)
-                                        {
-                                            particle[m1] = label;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    for (a = 1; a < p; ++a)
-    {
-        volume[a] = 0;
-
-        for (i1 = 0; i1 < nx; ++i1)
-        {
-            for (i2 = 0; i2 < ny; ++i2)
-            {
-                for (i3 = 0; i3 < nz; ++i3)
-                {
-                    ijk = i3 + i2 * nz + i1 * ny * nz;
-                    if (particle[ijk] == a)
-                    {
-                        volume[a] = volume[a] + 1;
-                    }
-                }
-            }
-        }
-    }
-    sprintf(NAME, "./Output/PostData/volume_%0.2f.dat", i);
-    if ((fpw = fopen(NAME, "w")) == NULL)
-    {
-        printf("Unable to open file %s", NAME);
-        printf("Exiting\n");
-        exit(0);
-    }
-    else
-    {
-        fpw = fopen(NAME, "w");
-    }
-    b1 = 0;
-    for (a = 1; a < p; ++a)
-    {
-        if (volume[a] > 0)
-        {
-            b1 = b1 + 1;
-            tmpelement = (3.0 * volume[a] / (M_PI * 4.0));
-            radius[a] = delx * pow(tmpelement, 1 / 3.0);
-            r_avg = r_avg + radius[a];
-            fprintf(fpw, "%d %d %d %lf\n", b1, a, volume[a], radius[a]);
-        }
-    }
-
-    fclose(fpw);
-
-    r_avg = r_avg / b1;
-    sprintf(NAME, "./Output/PostData/avg_rad_%0.2f.dat", i);
-    if ((fpw = fopen(NAME, "a")) == NULL)
-    {
-        printf("Unable to open file %s", NAME);
-        printf("Exiting\n");
-        exit(0);
-    }
-    else
-    {
-        fpw = fopen(NAME, "a");
-    }
-
-    fprintf(fpw, "%lf %lf %d\n", i * delt, r_avg, b1);
-
-    fclose(fpw);
-
-    free(comp);
-    free(particle);
+    return f;
 }
-// PROGRAM ENDS
 
-int minimum(int p_left, int p_down, int p_back, int p_right, int p_up, int p_front)
+/* ── Flat index for (i, j, k) in an lx × ly × lz grid ───────────────────── */
+#define IDX3(i, j, k, ny, nz) ((i)*(ny)*(nz) + (j)*(nz) + (k))
+
+/* ── Main ─────────────────────────────────────────────────────────────────── */
+int main(void)
 {
-    int min1, min2, min3, i, j;
-
-    int min[6];
-    min[0] = p_left;
-    min[1] = p_down;
-    min[2] = p_back;
-    min[3] = p_right;
-    min[4] = p_up;
-    min[5] = p_front;
-
-    for (i = 0; i < 6; ++i)
+    /* Read grid dimensions and snapshot time from input.dat */
+    int   grid_x, grid_y, grid_z;
+    float snapshot_time;
     {
-        for (j = i + 1; j < 6; ++j)
-        {
-            if (min[i] > min[j])
-            {
-                min1 = min[i];
-                min[i] = min[j];
-                min[j] = min1;
+        KVDoc doc     = kv_load("input.dat");
+        grid_x        = kv_get_int   (&doc, "lx");
+        grid_y        = kv_get_int   (&doc, "ly");
+        grid_z        = kv_get_int   (&doc, "lz");
+        snapshot_time = (float)kv_get_double(&doc, "time");
+    }
+
+    size_t n_total = (size_t)grid_x * grid_y * grid_z;
+
+    /*
+     * Allocate after reading dimensions so sizes are correct.
+     * (Original code allocated with hardcoded defaults before reading the file.)
+     */
+    double *composition = (double *)malloc(n_total * sizeof(double));
+    int    *label       = (int    *)malloc(n_total * sizeof(int));
+    if (!composition || !label) {
+        fprintf(stderr, "ERROR: allocation failed\n");
+        return EXIT_FAILURE;
+    }
+
+    /* Read composition field.
+     * ch3d_alloy writes one value per line ("%le\n") — match that format. */
+    char input_path[80];
+    snprintf(input_path, sizeof(input_path),
+             "./Output/Data/output_%0.2f.dat", snapshot_time);
+    FILE *fp_field = fopen_or_die(input_path, "r");
+    for (size_t n = 0; n < n_total; n++) {
+        label[n] = 0;
+        if (fscanf(fp_field, "%lf", &composition[n]) != 1) {
+            fprintf(stderr, "ERROR: unexpected EOF in '%s'\n", input_path);
+            fclose(fp_field);
+            return EXIT_FAILURE;
+        }
+    }
+    fclose(fp_field);
+
+    /* ── First pass: assign initial labels ────────────────────────────────── */
+    int next_label = 1;
+    for (int i = 0; i < grid_x; i++) {
+        for (int j = 0; j < grid_y; j++) {
+            for (int k = 0; k < grid_z; k++) {
+                int ijk = IDX3(i, j, k, grid_y, grid_z);
+
+                if (composition[ijk] <= PHASE_THRESHOLD || label[ijk] != 0)
+                    continue;
+
+                /* Periodic neighbour indices */
+                int i_plus  = (i + 1) % grid_x;
+                int i_minus = (i - 1 + grid_x) % grid_x;
+                int j_plus  = (j + 1) % grid_y;
+                int j_minus = (j - 1 + grid_y) % grid_y;
+                int k_plus  = (k + 1) % grid_z;
+                int k_minus = (k - 1 + grid_z) % grid_z;
+
+                int lbl_left  = label[IDX3(i_minus, j,      k,      grid_y, grid_z)];
+                int lbl_right = label[IDX3(i_plus,  j,      k,      grid_y, grid_z)];
+                int lbl_down  = label[IDX3(i,       j_minus,k,      grid_y, grid_z)];
+                int lbl_up    = label[IDX3(i,       j_plus, k,      grid_y, grid_z)];
+                int lbl_back  = label[IDX3(i,       j,      k_minus,grid_y, grid_z)];
+                int lbl_front = label[IDX3(i,       j,      k_plus, grid_y, grid_z)];
+
+                if (lbl_left || lbl_right || lbl_down ||
+                    lbl_up   || lbl_back  || lbl_front)
+                    label[ijk] = min_nonzero_label_6(lbl_left,  lbl_down, lbl_back,
+                                                     lbl_right, lbl_up,   lbl_front);
+                else
+                    label[ijk] = next_label++;
             }
         }
     }
 
-    if (min[0] > 0)
-    {
-        min2 = min[0];
+    /* ── Second pass: merge conflicting labels ────────────────────────────── */
+    for (int i = 0; i < grid_x; i++) {
+        for (int j = 0; j < grid_y; j++) {
+            for (int k = 0; k < grid_z; k++) {
+                int ijk = IDX3(i, j, k, grid_y, grid_z);
+                if (label[ijk] == 0) continue;
+
+                int i_plus  = (i + 1) % grid_x;
+                int i_minus = (i - 1 + grid_x) % grid_x;
+                int j_plus  = (j + 1) % grid_y;
+                int j_minus = (j - 1 + grid_y) % grid_y;
+                int k_plus  = (k + 1) % grid_z;
+                int k_minus = (k - 1 + grid_z) % grid_z;
+
+                int lbl_left  = label[IDX3(i_minus, j,      k,      grid_y, grid_z)];
+                int lbl_right = label[IDX3(i_plus,  j,      k,      grid_y, grid_z)];
+                int lbl_down  = label[IDX3(i,       j_minus,k,      grid_y, grid_z)];
+                int lbl_up    = label[IDX3(i,       j_plus, k,      grid_y, grid_z)];
+                int lbl_back  = label[IDX3(i,       j,      k_minus,grid_y, grid_z)];
+                int lbl_front = label[IDX3(i,       j,      k_plus, grid_y, grid_z)];
+
+                if (!(lbl_left || lbl_right || lbl_down ||
+                      lbl_up   || lbl_back  || lbl_front)) continue;
+
+                int min_lbl = min_nonzero_label_6(lbl_left,  lbl_down, lbl_back,
+                                                  lbl_right, lbl_up,   lbl_front);
+                int cur_lbl = label[ijk];
+
+                if (cur_lbl > min_lbl) {
+                    for (size_t n = 0; n < n_total; n++)
+                        if (label[n] == cur_lbl)
+                            label[n] = min_lbl;
+                }
+            }
+        }
     }
-    else if (min[1] > 0)
-    {
-        min2 = min[1];
+
+    /* ── Compute particle volumes ─────────────────────────────────────────── */
+    int *volume = (int *)calloc(next_label, sizeof(int));
+    if (!volume) { fprintf(stderr, "ERROR: volume allocation failed\n"); return EXIT_FAILURE; }
+
+    for (size_t n = 0; n < n_total; n++) {
+        int lbl = label[n];
+        if (lbl > 0 && lbl < next_label)
+            volume[lbl]++;
     }
-    else if (min[2] > 0)
-    {
-        min2 = min[2];
+
+    /* ── Write per-particle output ────────────────────────────────────────── */
+    char volume_path[80];
+    snprintf(volume_path, sizeof(volume_path),
+             "./Output/PostData/volume_%0.2f.dat", snapshot_time);
+    FILE *fp_vol = fopen_or_die(volume_path, "w");
+
+    double *radius      = (double *)calloc(next_label, sizeof(double));
+    double  r_avg       = 0.0;
+    int     n_particles = 0;
+
+    for (int a = 1; a < next_label; a++) {
+        if (volume[a] <= 0) continue;
+        n_particles++;
+        /* 3-D: r = (3V / 4π)^(1/3) */
+        radius[a] = pow(3.0 * volume[a] / (4.0 * M_PI), 1.0 / 3.0);
+        r_avg    += radius[a];
+        fprintf(fp_vol, "%d %d %d %lf\n", n_particles, a, volume[a], radius[a]);
     }
-    else if (min[3] > 0)
-    {
-        min2 = min[3];
+    fclose(fp_vol);
+
+    r_avg = (n_particles > 0) ? r_avg / (double)n_particles : 0.0;
+
+    /* ── Append summary statistics ────────────────────────────────────────── */
+    char avg_path[80];
+    snprintf(avg_path, sizeof(avg_path),
+             "./Output/PostData/avg_rad_%0.2f.dat", snapshot_time);
+    FILE *fp_avg = fopen_or_die(avg_path, "a");
+    fprintf(fp_avg, "%lf %lf %d\n",
+            (double)snapshot_time, r_avg, n_particles);
+    fclose(fp_avg);
+
+    /* ── Cleanup ──────────────────────────────────────────────────────────── */
+    free(composition);
+    free(label);
+    free(volume);
+    free(radius);
+
+    return EXIT_SUCCESS;
+}
+
+/* ── min_nonzero_label_6 ─────────────────────────────────────────────────── *
+ * Returns the smallest positive label among the six face neighbours.
+ */
+static int min_nonzero_label_6(int left, int down, int back,
+                                int right, int up,  int front)
+{
+    int c[6] = { left, down, back, right, up, front };
+
+    /* Insertion sort (tiny array — no need for qsort overhead) */
+    for (int i = 1; i < 6; i++) {
+        int key = c[i], j = i - 1;
+        while (j >= 0 && c[j] > key) { c[j + 1] = c[j]; j--; }
+        c[j + 1] = key;
     }
-    else if (min[4] > 0)
-    {
-        min2 = min[4];
-    }
-    else
-    {
-        min2 = min[5];
-    }
-    return (min2);
+
+    for (int i = 0; i < 6; i++)
+        if (c[i] > 0)
+            return c[i];
+
+    return 0;
 }

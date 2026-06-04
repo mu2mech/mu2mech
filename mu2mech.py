@@ -1,9 +1,9 @@
 import warnings
 warnings.filterwarnings("ignore")
 
-from PySide2.QtWidgets import QApplication, QMainWindow, QDialog, QFileDialog, QSlider, QLabel, QVBoxLayout, QWidget, QFrame, QAction, QSplashScreen
-from PySide2.QtCore import Qt, QProcess, QCoreApplication, QObject, QThread, Signal, SIGNAL
-from PySide2.QtGui import QCursor, QIcon, QPixmap, QTextCursor, QColor
+from PySide6.QtWidgets import QApplication, QMainWindow, QDialog, QFileDialog, QSlider, QLabel, QVBoxLayout, QWidget, QFrame, QSplashScreen
+from PySide6.QtCore import Qt, QProcess, QCoreApplication, QObject, QThread, Signal
+from PySide6.QtGui import QCursor, QIcon, QPixmap, QTextCursor, QColor, QAction
 
 from Forms.main import Ui_MainWindow
 from Forms.dialog_generate_input_hpc import Ui_DialogGenerateHPCInput
@@ -32,12 +32,19 @@ import math
 import numpy as np
 import threading
 import os
+import sys
+import platform
 import shutil
 
 # Set the OpenGL version override
 os.environ["MESA_GL_VERSION_OVERRIDE"] = "3.2"
 
-mu2mech_dir = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    mu2mech_dir = sys._MEIPASS
+else:
+    mu2mech_dir = os.path.dirname(os.path.abspath(__file__))
+
+_bin_ext = ".exe" if platform.system() == "Windows" else ".o"
 print(f"Running mu2mech in {mu2mech_dir}")
 
 class Ui_PhaseField (Ui_MainWindow, QMainWindow):
@@ -106,7 +113,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         self.slider_current_pos = 0
 
     def select_plot_colors(self):
-        PlotColors(self).exec_()
+        PlotColors(self).exec()
 
     def calc_running(self):
         self.lineEditTimeInterval.setEnabled(False)
@@ -279,7 +286,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         self.plotLabel.clear()
 
     def new_calc(self):
-        NewCalc(self).exec_()
+        NewCalc(self).exec()
         self.labelCalType.setText(variables.data['calType'])
 
         # Removing old files
@@ -339,17 +346,17 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         self.labelCurrentStatus.setText(str(self.time_arr[-1]))
 
         if (variables.data['calType'] == "Cahn Hilliard 1D"):
-            self.source_binary = f"{mu2mech_dir}/Sources/ch1d.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch1d{_bin_ext}"
         elif (variables.data['calType'] == "Cahn Hilliard 2D"):
-            self.source_binary = f"{mu2mech_dir}/Sources/ch2d_qualitative.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch2d_qualitative{_bin_ext}"
         elif (variables.data['calType'] == "Cahn Hilliard 2D alloy"):
-            self.source_binary = f"{mu2mech_dir}/Sources/ch2d_alloy.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch2d_alloy{_bin_ext}"
         elif (variables.data['calType'] == "Cahn Hilliard 3D alloy"):
-            self.source_binary = f"{mu2mech_dir}/Sources/ch3d_alloy.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch3d_alloy{_bin_ext}"
         print(self.source_binary)
 
     def export_animation(self):
-        ExportAnimation(self).exec_()
+        ExportAnimation(self).exec()
 
     def load_default_values(self):
         variables.selected_temperature = None
@@ -363,7 +370,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'delX': 0.5,
                 'dTilda': 1.0
             }
-            self.source_binary = f"{mu2mech_dir}/Sources/ch1d.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch1d{_bin_ext}"
 
         elif (variables.data['calType'] == "Cahn Hilliard 2D"):
             variables.data['parameters'] = {
@@ -377,7 +384,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'delX': 0.4,
                 'delY': 0.4
             }
-            self.source_binary = f"{mu2mech_dir}/Sources/ch2d_qualitative.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch2d_qualitative{_bin_ext}"
 
         elif (variables.data['calType'] == "Cahn Hilliard 2D alloy"):
             variables.data['parameters'] = {
@@ -396,9 +403,9 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'dd': 0,
                 'ee': 0,
                 'Ag': 0,
-                'Hg': 0 
+                'Hg': 0
             }
-            self.source_binary = f"{mu2mech_dir}/Sources/ch2d_alloy.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch2d_alloy{_bin_ext}"
 
         elif (variables.data['calType'] == "Cahn Hilliard 3D alloy"):
             variables.data['parameters'] = {
@@ -419,7 +426,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 'dd': 0,
                 'ee': 0,
             }
-            self.source_binary = f"{mu2mech_dir}/Sources/ch3d_alloy.o"
+            self.source_binary = f"{mu2mech_dir}/Sources/ch3d_alloy{_bin_ext}"
 
         self.lineEditTimeInterval.setText(
             str(variables.data['timeInterval']))
@@ -428,13 +435,13 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
     def edit_prameters(self):
         self.pushButtonStartStopResume.setEnabled(True)
         if (variables.data['calType'] == "Cahn Hilliard 1D"):
-            ParamCH1D(self).exec_()
+            ParamCH1D(self).exec()
         elif (variables.data['calType'] == "Cahn Hilliard 2D"):
-            ParamCH2D(self).exec_()
+            ParamCH2D(self).exec()
         elif (variables.data['calType'] == "Cahn Hilliard 2D alloy"):
-            ParamCH2DAlloy(self).exec_()
+            ParamCH2DAlloy(self).exec()
         elif (variables.data['calType'] == "Cahn Hilliard 3D alloy"):
-            ParamCH3DAlloy(self).exec_()
+            ParamCH3DAlloy(self).exec()
 
         self.pushButtonStartStopResume.setEnabled(True)
 
@@ -1556,7 +1563,7 @@ class Particles2D(Ui_DialogParticles, QDialog):
         input_arr.append(f"ly {variables.data['parameters']['ly']}")
         input_arr.append(f"time {variables.current_time}")
         input_file = open("input.dat", "w")
-        self.source_binary = f"{mu2mech_dir}/Sources/hkl_2d.o"
+        self.source_binary = f"{mu2mech_dir}/Sources/hkl_2d{_bin_ext}"
         for row in input_arr:
             input_file.write(row+"\n")
         input_file.close()
@@ -1604,7 +1611,7 @@ class Particles3D(Ui_DialogParticles, QDialog):
         input_arr.append(f"lz {variables.data['parameters']['lz']}")
         input_arr.append(f"time {variables.current_time}")
         input_file = open("input.dat", "w")
-        self.source_binary = f"{mu2mech_dir}/Sources/hkl_3d.o"
+        self.source_binary = f"{mu2mech_dir}/Sources/hkl_3d{_bin_ext}"
         for row in input_arr:
             input_file.write(row+"\n")
         input_file.close()
@@ -1741,7 +1748,7 @@ class PostProcessing3D(Ui_DialogPostProcessing3D, QDialog):
             self.labelStatus.setStyleSheet('color: red')
 
     def particles_info(self):
-        Particles3D(self).exec_()
+        Particles3D(self).exec()
 
     def checkbox_axis_changed(self):
         self.is_axis = self.checkBoxAxis.isChecked()
@@ -1911,4 +1918,4 @@ window = Ui_PhaseField()
 icon = QIcon(f"{mu2mech_dir}/Images/app_icon.png")
 window.setWindowIcon(icon)
 window.show()
-app.exec_()
+app.exec()
