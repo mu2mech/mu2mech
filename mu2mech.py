@@ -2,7 +2,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 from PySide6.QtWidgets import QApplication, QMainWindow, QDialog, QFileDialog, QSlider, QLabel, QVBoxLayout, QWidget, QFrame, QSplashScreen
-from PySide6.QtCore import Qt, QProcess, QCoreApplication, QObject, QThread, Signal
+from PySide6.QtCore import Qt, QProcess, QCoreApplication, QObject, QThread, QTimer, Signal
 from PySide6.QtGui import QCursor, QIcon, QPixmap, QTextCursor, QColor, QAction
 
 from Forms.main import Ui_MainWindow
@@ -30,7 +30,6 @@ import pyvista as pv
 from pyvistaqt import QtInteractor
 import math
 import numpy as np
-import threading
 import os
 import sys
 import platform
@@ -105,6 +104,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
 
         self.calc_process = None
         self.calc_thread_status = False
+        self._progress_timer = None
         self.job_submitted_hpc = False
         self.is_color_bar = True
         self.is_axis = True
@@ -219,9 +219,9 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
                 # Start the process
                 self.calc_process.start(self.source_binary, [])
                 
-                # Call progress status method if it exists
-                if hasattr(self, 'set_progress_status'):
-                    self.set_progress_status()
+                self._progress_timer = QTimer(self)
+                self._progress_timer.timeout.connect(self.set_progress_status)
+                self._progress_timer.start(500)
             
             except Exception as e:
                 print(f"Error starting calculation process: {e}")
@@ -251,10 +251,14 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         self.job_id = dl.job_id
         self.calc_running()
         self.calc_thread_status = True
-        self.set_progress_status()
+        self._progress_timer = QTimer(self)
+        self._progress_timer.timeout.connect(self.set_progress_status)
+        self._progress_timer.start(500)
 
     def calc_completed(self):
         self.calc_process = None
+        if self._progress_timer:
+            self._progress_timer.stop()
 
         self.calState = 2
         self.calc_thread_status = False
@@ -487,6 +491,12 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         self.labelStatus.setStyleSheet('color: black')
         self.pushButtonPlot.setEnabled(False)
         self.labelStatus.repaint()
+        self.get_completed_calc_list()
+        if not self.time_arr:
+            self.labelStatus.setText("No output files found")
+            self.labelStatus.setStyleSheet('color: red')
+            self.pushButtonPlot.setEnabled(True)
+            return
         self.resume_plot_from = self.time_arr[-1]
         self.slider_init()
         self.labelStatus.setText("Plots generated")
@@ -496,14 +506,13 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
 
     # Sets currently calculated/plotted status
     def set_progress_status(self):
-        if(self.calc_thread_status):
-            threading.Timer(0.1, self.set_progress_status).start()
         self.get_completed_calc_list()
-        if(len(self.time_arr) > 0):
-            percent_completed = int(
-                self.time_arr[-1]/variables.data['totalTime']*100)
+        if len(self.time_arr) > 0:
+            percent_completed = int(self.time_arr[-1] / variables.data['totalTime'] * 100)
             self.labelProgress.setText(f'{percent_completed}%')
             self.labelCurrentStatus.setText(str(self.time_arr[-1]))
+        if not self.calc_thread_status and self._progress_timer:
+            self._progress_timer.stop()
 
     def slider_init(self):
         self.horizontalSlider.setSliderPosition(0)
@@ -511,7 +520,7 @@ class Ui_PhaseField (Ui_MainWindow, QMainWindow):
         self.horizontalSlider.setSingleStep(1)
         self.horizontalSlider.setTickPosition(QSlider.TicksBelow)
 
-        self.slider_time_diff = self.time_arr[1]-self.time_arr[0]
+        self.slider_time_diff = (self.time_arr[1] - self.time_arr[0]) if len(self.time_arr) > 1 else self.time_arr[0]
         slider_min = int(self.time_arr[0]/self.slider_time_diff)
         slider_max = int(self.time_arr[-1]/self.slider_time_diff)
         self.horizontalSlider.setMinimum(slider_min)
