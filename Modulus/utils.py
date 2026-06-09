@@ -72,9 +72,14 @@ def delete_files(path):
 
 # Returns list of files
 def get_time_list(path, extension):
-    tmp = glob.glob(path+'/*'+extension)
-    return sorted(list(map(lambda x: float(x.replace(
-        path+"/output_", "").replace(extension, "")), tmp)), key=float)
+    tmp = glob.glob(path + '/*' + extension)
+    times = []
+    for x in tmp:
+        try:
+            times.append(float(os.path.basename(x).replace("output_", "").replace(extension, "")))
+        except ValueError:
+            pass
+    return sorted(times, key=float)
 
 
 # Takes image path, file path and time interval as an argument  and converts list of images to video
