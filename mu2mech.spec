@@ -30,6 +30,7 @@ if sys.platform == 'win32':
         ('Sources/ch2d_qualitative.exe','Sources'),
         ('Sources/hkl_2d.exe',          'Sources'),
         ('Sources/hkl_3d.exe',          'Sources'),
+        ('Sources/libfftw3-3.dll',      'Sources'),
     ]
     # ch1d.exe is optional — include only if it exists
     if os.path.isfile('Sources/ch1d.exe'):
@@ -58,7 +59,6 @@ hiddenimports = [
     'PIL._imaging',
     'yaml',
     'ffmpeg',
-    'pkg_resources.py2_warn',
 ]
 
 a = Analysis(
