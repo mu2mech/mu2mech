@@ -3,7 +3,7 @@ REM Build script for mu2mech — Windows x86_64
 REM Produces a self-contained folder at dist\mu2mech\
 REM
 REM Prerequisites (install before running this script):
-REM   1. Python 3.9 or 3.10  (https://python.org) — PySide2 does NOT support 3.11+
+REM   1. Python 3.9+          (https://python.org) — PySide6 supports Python 3.9 and newer
 REM   2. MinGW-w64 GCC       (https://winlibs.com or via MSYS2)
 REM   3. FFTW3 for Windows   (https://fftw.org/install/windows.html)
 REM       - Download fftw-3.3.x-dll64.zip, extract to C:\fftw3
@@ -26,11 +26,7 @@ if %PY_MAJ% NEQ 3 (
     echo ERROR: Python 3.9 or 3.10 required. Found %PYVER%.
     exit /b 1
 )
-if %PY_MIN% GTR 10 (
-    echo ERROR: PySide2 requires Python 3.8-3.10. Found %PYVER%.
-    echo Install Python 3.10 from https://python.org
-    exit /b 1
-)
+REM PySide6 supports Python 3.9+; no upper-bound restriction
 
 REM ── Compile C sources ─────────────────────────────────────────────────────
 echo.
